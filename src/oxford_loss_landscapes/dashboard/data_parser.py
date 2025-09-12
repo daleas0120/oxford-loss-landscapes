@@ -2,6 +2,7 @@ import glob
 import os
 import pandas as pd
 import numpy as np
+import streamlit as st
 
 # Note: calibration module needs to be implemented or import path needs to be fixed
 # from src.calibration import calculate_calibration, calculate_miscalibration_area
@@ -12,6 +13,33 @@ EXPERIMENTS = {
     'RANDOM_ENSEMBLE': -1,
     'pt1': 0.1,
 }
+
+def visualize_loss_landscape():
+
+    # Streamlit app for visualizing loss landscapes
+
+    st.title("3D Loss Landscape Viewer")
+
+    # Upload CSV or generate random data
+    landscape = np.genfromtxt('examples/example_loss_landscape_bandgap_Fe_ood.csv', delimiter=',', usecols=None)
+
+    x = np.linspace(-1, 1, landscape.shape[0])
+    y = np.linspace(-1, 1, landscape.shape[1])
+    X, Y = np.meshgrid(x, y, indexing='ij')
+
+    fig = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis')])
+    fig.update_layout(
+        scene=dict(
+            xaxis_title='Direction 1', 
+            yaxis_title='Direction 2',
+            zaxis_title='Loss'
+        ),
+        margin=dict(l=0, r=0, b=0, t=40)
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    return
 
 def get_loss_landscapes(DATA_DIR: str):
 
