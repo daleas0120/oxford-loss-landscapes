@@ -14,7 +14,7 @@ This automatically installs:
 - ✅ SciPy, pandas, tqdm, requests
 - ✅ torchdiffeq and all other dependencies
 
-**No manual PyTorch installation needed!**
+**No manual PyTorch installation is needed!**
 
 ## Verify Installation
 
