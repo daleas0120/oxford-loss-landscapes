@@ -31,7 +31,6 @@ def test_eval_hess_vec_prod():
     tmp_list = []
     for p in model.parameters():
         tmp_list.extend(p.detach().cpu().numpy().flatten())
-    print(f"Parameter list length: {len(tmp_list)}")
     model_param_array = np.array(tmp_list)
     criterion = nn.MSELoss()
     
