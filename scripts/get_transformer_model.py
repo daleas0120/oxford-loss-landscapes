@@ -210,8 +210,6 @@ def main():
                        help="Save format: pytorch (weights only), transformers (full), or both (default: pytorch)")
     parser.add_argument("--simple", action="store_true",
                        help="Create a simple transformer from scratch instead of downloading")
-    parser.add_argument("--create-example", action="store_true",
-                       help="Create an example script for loading the model")
     
     args = parser.parse_args()
     
@@ -225,10 +223,6 @@ def main():
         save_format=args.format,
         use_simple=args.simple
     )
-    
-    # Create example script if requested
-    if args.create_example:
-        create_example_usage_script(args.output_dir, use_simple=args.simple)
     
     print("\n✅ Transformer model download completed successfully!")
 
