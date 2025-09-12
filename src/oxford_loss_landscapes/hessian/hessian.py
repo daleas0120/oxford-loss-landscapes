@@ -20,7 +20,6 @@ def npvec_to_tensorlist(vec, params):
     """
     loc = 0
     rval = []
-    # print(f'Converting vector of size {vec.size} to tensor list with {len(params)} parameters')
     for p in params:
         numel = p.data.numel()
         rval.append(torch.from_numpy(vec[loc:loc+numel]).view(p.data.shape).float())
