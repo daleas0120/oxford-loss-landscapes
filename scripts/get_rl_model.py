@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Download Simple Transformer Model Script
+Create and Save Simple RL Model Script
 
-This script downloads a simple pre-trained transformer model and saves the weights
-for use with the oxford_loss_landscapes package. The script downloads a lightweight
-transformer model suitable for loss landscape analysis.
+This script creates a simple feedforward neural network (RL model) from scratch and saves
+its weights for use with the oxford_loss_landscapes package. The model is suitable for
+loss landscape analysis and does not require the transformers library.
 """
 
 import os
