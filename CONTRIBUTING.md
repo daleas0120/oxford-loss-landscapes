@@ -3,17 +3,20 @@
 ## Development Setup
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/daleas0120/oxford_rse_project4.git
    cd oxford_rse_project4
    ```
 
 2. **Install in development mode**:
+
    ```bash
    pip install -e .[dev]
    ```
 
 3. **Run tests**:
+
    ```bash
    python -m pytest tests/ -v
    ```
@@ -49,12 +52,14 @@ src/oxford_loss_landscapes/
 ## Contributing
 
 1. **Code Style**: We use `black` for formatting and `isort` for import sorting:
+
    ```bash
    black src/ tests/
    isort src/ tests/
    ```
 
 2. **Type Checking**: Use `mypy` for type checking:
+
    ```bash
    mypy src/
    ```
@@ -66,16 +71,19 @@ src/oxford_loss_landscapes/
 ## Building and Distribution
 
 1. **Build the package**:
+
    ```bash
    python -m build
    ```
 
 2. **Check the distribution**:
+
    ```bash
    twine check dist/*
    ```
 
 3. **Upload to PyPI** (maintainers only):
+
    ```bash
    twine upload dist/*
    ```

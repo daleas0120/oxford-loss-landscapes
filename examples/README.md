@@ -5,15 +5,18 @@ This directory contains example scripts demonstrating how to use the Oxford Loss
 ## Available Examples
 
 ### Basic Usage
+
 - `basic_usage.py` - Basic introduction to the package functionality
 - `README.md` - This file
 
 ### Hessian Analysis  
+
 - `hessian_analysis_guide.py` - Comprehensive guide to Hessian eigenvalue analysis concepts
 - `hessian_eigenvalue_analysis.py` - Practical example of computing Hessian eigenvalues and eigenvectors
 - `simple_hessian_analysis.py` - Simple demonstration of Hessian computation
 
 ### Planned Examples
+
 - Loss landscape visualization examples
 - Model comparison examples  
 - Advanced metrics usage examples
@@ -27,6 +30,7 @@ pip install -e .
 ```
 
 This single command installs:
+
 - PyTorch (version automatically selected for your Python version)  
 - All numerical computation dependencies (NumPy, SciPy, pandas)
 - Package-specific dependencies (torchdiffeq, etc.)
@@ -47,6 +51,7 @@ python examples/hessian_eigenvalue_analysis.py
 ## Hessian Analysis Examples
 
 The Hessian analysis examples demonstrate how to:
+
 - Compute maximum and minimum eigenvalues of the Hessian matrix
 - Extract and analyze eigenvectors  
 - Interpret eigenvalue signs (local minimum vs saddle point)

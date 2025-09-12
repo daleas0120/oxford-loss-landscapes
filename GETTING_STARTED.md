@@ -9,8 +9,9 @@ pip install -e .
 ```
 
 This automatically installs:
+
 - ✅ PyTorch (correct version for your Python)
-- ✅ NumPy (correct version for your Python) 
+- ✅ NumPy (correct version for your Python)
 - ✅ SciPy, pandas, tqdm, requests
 - ✅ torchdiffeq and all other dependencies
 

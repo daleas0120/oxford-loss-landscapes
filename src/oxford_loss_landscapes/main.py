@@ -231,11 +231,11 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     start_point = model_start_wrapper.get_module_parameters()
 
     if eigen_models:
-        dir_one = (model_end_one_wrapper.get_module_parameters()) / steps
-        dir_two = (model_end_two_wrapper.get_module_parameters()) / steps
+        dir_one = distance*(model_end_one_wrapper.get_module_parameters()) / steps
+        dir_two = distance*(model_end_two_wrapper.get_module_parameters()) / steps
     else:
-        dir_one = (model_end_one_wrapper.get_module_parameters() - start_point) / steps
-        dir_two = (model_end_two_wrapper.get_module_parameters() - start_point) / steps
+        dir_one = distance*(model_end_one_wrapper.get_module_parameters() - start_point) / steps
+        dir_two = distance*(model_end_two_wrapper.get_module_parameters() - start_point) / steps
 
     # scale to match steps and total distance
     # dir_one.mul_(((start_point.model_norm() * distance) / steps) / dir_one.model_norm())
