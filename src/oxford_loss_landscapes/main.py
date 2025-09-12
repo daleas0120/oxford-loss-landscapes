@@ -12,7 +12,37 @@ from .model_interface.model_parameters import rand_u_like, orthogonal_to
 from .metrics.metric import Metric
 
 
-# noinspection DuplicatedCode
+def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper):
+    """
+    Helper function to evaluate a planar region in parameter space.
+    This avoids code duplication between planar_interpolation and random_plane.
+    """
+    data_matrix = []
+    # evaluate loss in grid of (steps * steps) points, where each column signifies one step
+    # along dir_one and each row signifies one step along dir_two. The implementation is again
+    # a little convoluted to avoid constructive operations. Fundamentally we generate the matrix
+    # [[start_point + (dir_one * i) + (dir_two * j) for j in range(steps)] for i in range(steps].
+    
+    for i in range(steps):
+    # for i in trange(steps, desc='Calculating Surface...'):
+        data_column = []
+
+        for _ in range(steps):
+            # for every other column, reverse the order in which the column is generated
+            # so you can easily use in-place operations to move along dir_two
+            if i % 2 == 0:
+                start_point.add_(dir_two)
+                data_column.append(metric(model_wrapper))
+            else:
+                start_point.sub_(dir_two)
+                data_column.insert(0, metric(model_wrapper))
+
+        data_matrix.append(data_column)
+        start_point.add_(dir_one)
+
+    return np.array(data_matrix)
+
+
 def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) -> tuple:
     """
     Returns the computed value of the evaluation function applied to the model
@@ -32,7 +62,6 @@ def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) ->
     return metric(wrap_model(model))
 
 
-# noinspection DuplicatedCode
 def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end: typing.Union[torch.nn.Module, ModelWrapper],
                          metric: Metric, steps=100, deepcopy_model=False) -> np.ndarray:
@@ -85,7 +114,6 @@ def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     return np.array(data_values)
 
 
-# noinspection DuplicatedCode
 def random_line(model_start: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric, distance=0.1, steps=100,
                 normalization='filter', deepcopy_model=False) -> np.ndarray:
     """
@@ -155,7 +183,6 @@ def random_line(model_start: typing.Union[torch.nn.Module, ModelWrapper], metric
     return np.array(data_values)
 
 
-# noinspection DuplicatedCode
 def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end_one: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end_two: typing.Union[torch.nn.Module, ModelWrapper],
@@ -221,35 +248,11 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     dir_one.truediv_(steps / 2)
     dir_two.truediv_(steps / 2)
 
-    data_matrix = []
-    # evaluate loss in grid of (steps * steps) points, where each column signifies one step
-    # along dir_one and each row signifies one step along dir_two. The implementation is again
-    # a little convoluted to avoid constructive operations. Fundamentally we generate the matrix
-    # [[start_point + (dir_one * i) + (dir_two * j) for j in range(steps)] for i in range(steps].
-    
-    for i in range(steps):
-    # for i in trange(steps, desc='Calculating Surface...'):
-        data_column = []
-
-        for _ in range(steps):
-            # for every other column, reverse the order in which the column is generated
-            # so you can easily use in-place operations to move along dir_two
-            if i % 2 == 0:
-                start_point.add_(dir_two)
-                data_column.append(metric(model_start_wrapper))
-            else:
-                start_point.sub_(dir_two)
-                data_column.insert(0, metric(model_start_wrapper))
-
-        data_matrix.append(data_column)
-        start_point.add_(dir_one)
-
-    return np.array(data_matrix)
+    return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
 
 
 
 
-# noinspection DuplicatedCode
 def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric, distance=1, steps=20,
                  normalization='filter', deepcopy_model=False) -> np.ndarray:
     """
@@ -321,30 +324,7 @@ def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Met
     dir_one.truediv_(steps / 2)
     dir_two.truediv_(steps / 2)
 
-    data_matrix = []
-    # evaluate loss in grid of (steps * steps) points, where each column signifies one step
-    # along dir_one and each row signifies one step along dir_two. The implementation is again
-    # a little convoluted to avoid constructive operations. Fundamentally we generate the matrix
-    # [[start_point + (dir_one * i) + (dir_two * j) for j in range(steps)] for i in range(steps].
-    
-    for i in range(steps):
-    # for i in trange(steps, desc='Calculating Surface...'):
-        data_column = []
-
-        for _ in range(steps):
-            # for every other column, reverse the order in which the column is generated
-            # so you can easily use in-place operations to move along dir_two
-            if i % 2 == 0:
-                start_point.add_(dir_two)
-                data_column.append(metric(model_start_wrapper))
-            else:
-                start_point.sub_(dir_two)
-                data_column.insert(0, metric(model_start_wrapper))
-
-        data_matrix.append(data_column)
-        start_point.add_(dir_one)
-
-    return np.array(data_matrix)
+    return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
 
 
 # todo add hypersphere function

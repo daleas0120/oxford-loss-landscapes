@@ -1,0 +1,22 @@
+include README.md
+include LICENSE
+include src/oxford_loss_landscapes/py.typed
+include README.md
+include LICENSE
+include CONTRIBUTING.md
+include PACKAGE_CONVERSION_SUMMARY.md
+recursive-include src/oxford_loss_landscapes *.py
+recursive-include tests *.py
+recursive-include examples *.py
+recursive-include scripts *.sh *.py
+recursive-include models README.md
+recursive-include scripts README.md
+global-exclude *.pyc
+global-exclude __pycache__/
+global-exclude *.egg-info/
+global-exclude .pytest_cache/
+global-exclude .git/
+recursive-include scripts *.sh *.py
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+global-exclude .DS_Store

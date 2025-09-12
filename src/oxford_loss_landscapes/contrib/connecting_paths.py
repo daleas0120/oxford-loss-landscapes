@@ -13,12 +13,11 @@ from ..model_interface import wrap_model
 
 class _ParametricCurve(abc.ABC):
     """ A _ParametricCurve is used in the Garipov path search algorithm. """
-    # todo
+    pass
 
 
 class _PolygonChain(_ParametricCurve):
     """ A _ParametricCurve consisting of consecutive line segments. """
-    # todo
     pass
 
 
@@ -65,14 +64,11 @@ class _BezierCurve(_ParametricCurve):
                 self.control_points.append(model_template_wrapper)
 
     def fit(self):
-        # todo
         raise NotImplementedError()
 
 
 def auto_neb() -> np.ndarray:
     """ Automatic Nudged Elastic Band algorithm, as used in https://arxiv.org/abs/1803.00885 """
-    # todo return list of points in parameter space to represent trajectory
-    # todo figure out how to return points as coordinates in 2D
     raise NotImplementedError()
 
 
@@ -92,7 +88,6 @@ def garipov_curve_search(model_a, model_b, curve_type='polygon_chain') -> np.nda
     point_a = model_a_wrapper.get_parameter_tensor()
     point_b = model_b_wrapper.get_parameter_tensor()
 
-    # todo
     if curve_type == 'polygon_chain':
         raise NotImplementedError('Not implemented yet.')
     elif curve_type == 'bezier_curve':

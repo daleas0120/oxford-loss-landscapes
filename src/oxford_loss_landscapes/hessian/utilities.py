@@ -145,11 +145,6 @@ def update_step(u,
         u_new = u.flatten() - h*delta_u
         u_new = u_new.reshape(u.size())
 
-    # alternative implementation
-    #u_new = deepcopy(u)
-    #for j in range(ensemble_members):
-    #    u_new[j] = u[j] - (Cuw_u @ torch.lstsq(F_u[j]-y[j],Sigma)[0]).flatten()
-    
     return u_new
     
 def generate_initial_ensemble(func, 
@@ -185,7 +180,6 @@ def generate_initial_ensemble(func,
             func_enkf = func(number_layers, number_neurons)
         else:
             func_enkf = func()
-        #func_enkf.apply(weights_init)
         
         pred_x = odeint(func_enkf, x0, t, method='dopri5')
         
@@ -201,7 +195,6 @@ def generate_initial_ensemble(func,
         
         params = get_weights(func_enkf)
         flattened_params = tensorlist_to_tensor(params)
-        #flattened_params += 1e-1*torch.randn_like(flattened_params)
         
         initial_ensemble = torch.cat((initial_ensemble, flattened_params))
                 
@@ -313,10 +306,8 @@ def add_new_ensemble_members(u,
         else:
             func_enkf = func()
             
-        #func_enkf.apply(weights_init)
         params = get_weights(func_enkf)
         flattened_params = tensorlist_to_tensor(params)
-        #flattened_params += 1e-1*torch.randn_like(flattened_params)
         u = torch.cat((u, u_mean+new_ensemble_prefactor*flattened_params))
         
     ensemble_members += new_ensemble_members

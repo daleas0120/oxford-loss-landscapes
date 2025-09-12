@@ -3,7 +3,8 @@ import os
 import pandas as pd
 import numpy as np
 
-from src.calibration import calculate_calibration, calculate_miscalibration_area
+# Note: calibration module needs to be implemented or import path needs to be fixed
+# from src.calibration import calculate_calibration, calculate_miscalibration_area
 
 
 EXPERIMENTS = {
