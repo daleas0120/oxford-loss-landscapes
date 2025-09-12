@@ -81,7 +81,7 @@ def npvec_to_tensorlist(flattened_weights,
             s2.append(flattened_weights[idx:idx + w.numel()]).clone().detach().view(w.size())
             idx += w.numel()
         assert(idx == len(flattened_weights))
-        return s2s
+        return s2
         
 def covariance(x, 
                y,
