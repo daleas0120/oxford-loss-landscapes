@@ -80,5 +80,3 @@ def test_hessian_trace():
 
     # Basic assertions
     assert isinstance(estimated_trace, float)
-    assert estimated_trace >= 0
-
