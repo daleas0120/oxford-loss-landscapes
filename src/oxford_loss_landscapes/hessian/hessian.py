@@ -25,7 +25,6 @@ def npvec_to_tensorlist(vec, params):
         numel = p.data.numel()
         rval.append(torch.from_numpy(vec[loc:loc+numel]).view(p.data.shape).float())
         loc += numel
-    # print(f'The vector has a {loc} elements and the net has {vec.size} parameters')
     assert loc == vec.size, f'ERROR: The vector has a {loc} elements and the net has {vec.size} parameters'
     return rval
 
