@@ -7,21 +7,25 @@ The restructured `get_transformer_model.py` script provides a robust way to down
 ## Features
 
 ### 1. **Flexible Model Options**
+
 - Download pre-trained transformers from Hugging Face Hub
 - Create simple transformer models from scratch (no internet required)
 - Automatic fallback to simple model if transformers library is unavailable
 
 ### 2. **Multiple Save Formats**
+
 - **PyTorch format**: State dict only (`.pth` file) - ideal for loss landscape analysis
 - **Transformers format**: Full model with config and tokenizer - for complete functionality
 - **Both formats**: Save in both formats simultaneously
 
 ### 3. **Model Information**
+
 - Detailed model statistics (parameters, size, architecture)
 - Configuration preservation
 - Comprehensive metadata saving
 
 ### 4. **Example Generation**
+
 - Automatically creates usage examples
 - Shows integration with oxford_loss_landscapes
 - Demonstrates loss computation and model wrapping
@@ -40,8 +44,6 @@ python get_transformer_model.py --model "distilbert-base-uncased"
 # Specify output directory and format
 python get_transformer_model.py --simple --output-dir ./my_models --format pytorch
 
-# Create example script
-python get_transformer_model.py --simple --create-example
 ```
 
 ### Options
@@ -66,10 +68,12 @@ When using `--simple`, the script creates a transformer with:
 ## Output Files
 
 ### For Simple Transformer (`--simple`)
+
 - `simple_transformer_weights.pth`: PyTorch state dict with metadata
 - `load_transformer_example.py`: Example usage script (if `--create-example`)
 
 ### For Downloaded Models
+
 - `transformer_weights.pth`: PyTorch state dict (if pytorch format)
 - `transformer_model/`: Full model directory (if transformers format)
 - `load_transformer_example.py`: Example usage script (if `--create-example`)
@@ -103,27 +107,32 @@ The script includes robust error handling:
 ## Dependencies
 
 ### Required
+
 - `torch`: PyTorch framework
 - `pathlib`: Path handling (built-in)
 - `argparse`: Command line parsing (built-in)
 
 ### Optional
+
 - `transformers`: For downloading pre-trained models from Hugging Face
 
 ## Example Workflow
 
 1. **Download/Create Model**:
+
    ```bash
    python get_transformer_model.py --simple --create-example
    ```
 
 2. **Load in Python**:
+
    ```python
    from load_transformer_example import create_model_for_analysis
    model = create_model_for_analysis()
    ```
 
 3. **Use with Loss Landscapes**:
+
    ```python
    from src.oxford_loss_landscapes.model_interface.model_wrapper import SimpleModelWrapper
    model_wrapper = SimpleModelWrapper(model)
@@ -132,14 +141,16 @@ The script includes robust error handling:
 
 ## Improvements from Original
 
-### Original Script Issues:
+### Original Script Issues
+
 - ❌ No error handling
 - ❌ Fixed model only
 - ❌ No usage examples
 - ❌ Incomplete saving format
 - ❌ No documentation
 
-### New Script Features:
+### New Script Features
+
 - ✅ Comprehensive error handling and fallback options
 - ✅ Multiple model options (simple vs. pre-trained)
 - ✅ Automatic example generation
@@ -151,6 +162,7 @@ The script includes robust error handling:
 ## Future Enhancements
 
 Potential future improvements:
+
 - Support for more model architectures (GPT, T5, etc.)
 - Custom model size configurations
 - Batch processing for multiple models
