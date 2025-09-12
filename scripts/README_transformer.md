@@ -52,7 +52,6 @@ python get_transformer_model.py --simple --output-dir ./my_models --format pytor
 - `--output-dir DIR`: Output directory for saved models (default: ../models)
 - `--format FORMAT`: Save format - pytorch, transformers, or both (default: pytorch)
 - `--simple`: Create simple transformer from scratch instead of downloading
-- `--create-example`: Generate example usage script
 
 ## Simple Transformer Specifications
 
