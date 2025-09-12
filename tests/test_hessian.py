@@ -39,8 +39,6 @@ def test_eval_hess_vec_prod():
     y = X.sum(dim=1, keepdim=True) + 0.1 * torch.randn(30, 1)
     
     # Forward pass
-    # output = model(X)
-    # _ = criterion(output, y)
     
     # Compute Hessian properties
     max_eig, min_eig, maxeigvec, mineigvec, _ = min_max_hessian_eigs(model, X, y, criterion)
