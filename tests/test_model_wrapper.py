@@ -7,7 +7,6 @@ def test_init_model_wrapper():
     try:
         from oxford_loss_landscapes.model_interface.model_wrapper import ModelWrapper
         from oxford_loss_landscapes.model_interface.model_wrapper import SimpleModelWrapper
-        from oxford_loss_landscapes.model_interface.model_wrapper import GeneralModelWrapper
     except ImportError as e:
         pytest.skip(f"ModelWrapper not available: {e}")     
 
