@@ -57,16 +57,6 @@ class SimpleModelWrapper(ModelWrapper):
         return self.modules[0](x)
 
 
-class GeneralModelWrapper(ModelWrapper):
-    def __init__(self, model, modules: list, forward_fn):
-        super().__init__(modules)
-        self.model = model
-        self.forward_fn = forward_fn
-
-    def forward(self, x):
-        return self.forward_fn(self.model, x)
-
-
 def wrap_model(model):
     if isinstance(model, ModelWrapper):
         return model.requires_grad_(False)
