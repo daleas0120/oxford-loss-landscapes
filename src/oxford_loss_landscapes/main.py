@@ -6,10 +6,14 @@ import typing
 import torch.nn
 import numpy as np
 from tqdm import trange
+import ray # for parallel processing
+import os
 
 from .model_interface.model_wrapper import ModelWrapper, wrap_model
 from .model_interface.model_parameters import rand_u_like, orthogonal_to
 from .metrics.metric import Metric
+
+from .parallel_utils import initialize_ray, choose_num_workers, PlaneWorker
 
 
 def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper):
@@ -41,6 +45,100 @@ def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper)
         start_point.add_(dir_one)
 
     return np.array(data_matrix)
+
+
+def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model_wrapper,
+                            use_ray: bool = True, ray_init_kwargs: dict = None, num_workers: int = None):
+    """
+    Parameters
+    ----------
+    start_point : tensor-like
+        Initial point in parameter space. This object will be mutated during
+        sequential evaluation, so pass a copy if you need to preserve it.
+    dir_one : tensor-like
+        Direction vector for row steps (x-axis).
+    dir_two : tensor-like
+        Direction vector for column steps (y-axis).
+    steps : int
+        Number of steps in each direction (grid will be steps x steps).
+    metric : callable
+        Function of (model_wrapper) that evaluates the loss/score at the
+        current parameters of the model.
+    model_wrapper : object
+        Wrapper object providing model parameters and any other state required
+        by `metric`.
+    use_ray : bool, default=True
+        If True, attempt to use Ray actors for parallel execution.
+        If False or Ray is unavailable, fall back to sequential evaluation.
+    ray_init_kwargs : dict, optional
+        Passed to `ray.init()` if Ray must be initialized.
+    num_workers : int, optional
+        Number of Ray workers (actors) to create. Defaults to CPU count,
+        capped by `steps`.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (steps, steps) containing metric values for the plane.
+        Row index corresponds to dir_one steps, column index to dir_two steps.
+
+    Notes
+    -----
+    - If Ray initialization or execution fails for any reason,
+      the function silently falls back to the sequential implementation.
+    - The traversal pattern (snake-like per row) is identical to the
+      original `_evaluate_plane` for consistency.
+    """
+    # sequential fallback implementation (identical behaviour to original)
+    def _sequential_eval(sp, d1, d2, steps_, metric_, wrapper_):
+        data_matrix = []
+        for i in range(int(steps_)):
+            data_column = []
+            for _ in range(int(steps_)):
+                if i % 2 == 0:
+                    sp.add_(d2)
+                    data_column.append(metric_(wrapper_))
+                else:
+                    sp.sub_(d2)
+                    data_column.insert(0, metric_(wrapper_))
+            data_matrix.append(data_column)
+            sp.add_(d1)
+        return np.array(data_matrix)
+
+    if not use_ray or ray is None:
+        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
+
+    # initialize ray
+    try:
+        initialize_ray(ray_init_kwargs)
+    except Exception:
+        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
+
+    workers_count = choose_num_workers(num_workers, steps)
+    print(f"Chosen number of workers: {workers_count}")
+
+    # create actors
+    try:
+        workers = [PlaneWorker.remote(model_wrapper, metric) for _ in range(workers_count)]
+        print(f"Using {workers_count} Ray workers for parallel evaluation.")
+    except Exception:
+        # actor creation failed; fallback
+        print("Failed to create Ray actors; falling back to sequential evaluation.")
+        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
+
+    # schedule row tasks round-robin
+    futures = []
+    for i in range(int(steps)):
+        worker = workers[i % workers_count]
+        futures.append(worker.eval_plane_row.remote(dir_one, dir_two, i, steps))
+
+    try:
+        results = ray.get(futures)
+    except Exception:
+        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
+
+    # results is list of rows in order i=0..steps-1
+    return np.array(results)
 
 
 def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) -> tuple:
@@ -248,7 +346,7 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     dir_one.truediv_(steps / 2)
     dir_two.truediv_(steps / 2)
 
-    return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
+    return _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
 
 
 
@@ -324,7 +422,7 @@ def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Met
     dir_one.truediv_(steps / 2)
     dir_two.truediv_(steps / 2)
 
-    return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
+    return _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
 
 
 # todo add hypersphere function
