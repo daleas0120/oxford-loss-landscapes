@@ -83,3 +83,33 @@ def test_hessian_trace():
     assert isinstance(estimated_trace, float)
     assert estimated_trace >= 0
 
+def test_copy_wts_into_model():
+    """Test copying weights into a model."""
+    try:
+        from oxford_loss_landscapes.hessian.utilities import copy_wts_into_model
+    except ImportError:
+        pytest.skip("Utils package not available; skipping related tests.")
+    model = nn.Sequential(
+        nn.Linear(3, 8),
+        nn.ReLU(),
+        nn.Linear(8, 1)
+    )
+    original_params = [p.clone() for p in model.parameters()]
+    
+    # Create new weights with the same shape
+    new_weights = []
+    for p in model.parameters():
+        new_weights.append(torch.randn_like(p))
+    
+    # Function to copy weights
+
+    
+    new_model = copy_wts_into_model(new_weights, model)
+    
+    # Check that weights have been updated
+    for p, new_w in zip(new_model.parameters(), new_weights):
+        assert torch.allclose(p, new_w)
+    
+    # Check that weights are different from original
+    for p, orig_p in zip(new_model.parameters(), original_params):
+        assert not torch.allclose(p, orig_p)
