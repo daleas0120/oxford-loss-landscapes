@@ -3,9 +3,8 @@ import copy
 import types
 import numpy as np
 import numpy.testing as npt
-import pytest
 
-from oxford_loss_landscapes import main, parallel_utils
+from oxford_loss_landscapes import main
 
 
 class DummyModelWrapper:

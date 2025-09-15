@@ -14,8 +14,6 @@ from .model_interface.model_wrapper import ModelWrapper, wrap_model
 from .model_interface.model_parameters import rand_u_like, orthogonal_to
 from .metrics.metric import Metric
 
-from .parallel_utils import initialize_ray, choose_num_workers, PlaneWorker
-
 
 def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper):
     """
@@ -121,48 +119,26 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
     if num_workers is None:
         num_workers = min(steps, max(1, available_cpus))
 
-    # Ray actor: each actor owns a deepcopy of the model wrapper and the metric,
-    # and computes one or more rows independently by mutating its own parameters.
     @ray.remote
-    class _RayWorker:
-        def __init__(self, model_wrapper_, metric_):
-            # each worker must have its own copy so parameter mutations are local
-            self.model_wrapper = copy.deepcopy(model_wrapper_)
-            self.metric = metric_
+    def eval_row(sp, dir_one_, dir_two_, steps_, metric_, wrapper_, row_idx):
+        data_column = []
+        for j in range(steps_):
+            if j % 2 == 0:
+                sp.add_(dir_two_)
+                data_column.append(metric_(wrapper_))
+            else:
+                sp.sub_(dir_two_)
+                data_column.insert(0, metric_(wrapper_))
+        sp.add_(dir_one_)
 
-        def eval_row(self, dir_one_, dir_two_, row_idx, steps_):
-            # get local reference to parameters and reproduce the same
-            # "top-left" shift that sequential code applied before iterating rows
-            start_p = self.model_wrapper.get_module_parameters()
-            start_p.sub_(dir_one_)
-            start_p.sub_(dir_two_)
+        return data_column
 
-            # move to the requested row
-            for _ in range(row_idx):
-                start_p.add_(dir_one_)
-
-            data_column = []
-            for j in range(steps_):
-                if j % 2 == 0:
-                    start_p.add_(dir_two_)
-                    data_column.append(self.metric(self.model_wrapper))
-                else:
-                    start_p.sub_(dir_two_)
-                    data_column.insert(0, self.metric(self.model_wrapper))
-            return data_column
-
-    # create actors
-    workers = [ _RayWorker.remote(model_wrapper, metric) for _ in range(num_workers) ]
-
-    # schedule row tasks round-robin across workers
-    futures = []
-    for i in range(steps):
-        worker = workers[i % num_workers]
-        futures.append(worker.eval_row.remote(dir_one, dir_two, i, steps))
+    columns = [eval_row.remote(copy.deepcopy(start_point), dir_one, dir_two, steps, metric, copy.deepcopy(model_wrapper), i)
+               for i in range(int(steps))]
 
     # collect results and assemble matrix (rows as returned)
     try:
-        results = ray.get(futures)
+        results = ray.get(columns)
     except Exception:
         # if remote execution fails for any reason, fallback to sequential
         print("Warning: Ray remote execution failed, falling back to sequential evaluation.")
