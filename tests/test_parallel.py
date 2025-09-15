@@ -3,8 +3,13 @@ import copy
 import types
 import numpy as np
 import numpy.testing as npt
+import torch
+import torch.nn as nn
 
 from oxford_loss_landscapes import main
+from oxford_loss_landscapes.model_interface.model_wrapper import SimpleModelWrapper, wrap_model
+from oxford_loss_landscapes.metrics import Loss
+from oxford_loss_landscapes.model_interface.model_parameters import rand_u_like, orthogonal_to
 
 
 class DummyModelWrapper:
@@ -58,71 +63,144 @@ def metric_identity(wrapper: DummyModelWrapper):
     return float(wrapper.value)
 
 
-def _make_fake_plane_worker():
-    """
-    Create a FakePlaneWorker factory compatible with main._evaluate_plane_parallel usage:
-    - has a .remote(...) classmethod returning an actor-like object with eval_plane_row.remote(...)
-    """
-    def actor_factory(model_wrapper, metric):
-        # keep a deep copy like the real actor does
-        local_wrapper = copy.deepcopy(model_wrapper)
-        def eval_plane_row_remote(dir_one, dir_two, row_idx, steps):
-            start_p = local_wrapper.get_module_parameters()
-            # reproduce initialization used in parallel_utils.PlaneWorker
-            start_p.sub_(dir_one)
-            start_p.sub_(dir_two)
-            for _ in range(int(row_idx)):
-                start_p.add_(dir_one)
+def create_simple_model():
+    """Create a simple neural network for demonstration."""
+    model = nn.Sequential(
+        nn.Linear(100, 512),
+        nn.ReLU(),
+        nn.Linear(512, 512),
+        nn.ReLU(),
+        nn.Linear(512, 256),
+        nn.ReLU(),
+        nn.Linear(256, 128),
+        nn.ReLU(),
+        nn.Linear(128, 1)
+    )
+    return model
 
-            data_column = []
-            for j in range(int(steps)):
-                if j % 2 == 0:
-                    start_p.add_(dir_two)
-                    data_column.append(metric(local_wrapper))
-                else:
-                    start_p.sub_(dir_two)
-                    data_column.insert(0, metric(local_wrapper))
-            return data_column
 
-        actor = types.SimpleNamespace()
-        actor.eval_plane_row = types.SimpleNamespace(remote=eval_plane_row_remote)
-        return actor
+def create_simple_model():
+    """Create a simple neural network for demonstration."""
+    model = nn.Sequential(
+        nn.Linear(2, 10),
+        nn.ReLU(),
+        nn.Linear(10, 5),
+        nn.ReLU(),
+        nn.Linear(5, 1)
+    )
+    return model
 
-    fake_cls = types.SimpleNamespace(remote=staticmethod(actor_factory))
-    return fake_cls
 
-#@pytest.mark.skipif("ray" not in globals(), reason="Ray not available")
-def test_serial_and_parallel_plane_equal_and_timing():
+def generate_data(n_samples=100):
+    """Generate simple synthetic data for demonstration."""
+    # Generate 2D input data
+    X = torch.randn(n_samples, 2)
+    # Simple target: sum of squares
+    y = (X[:, 0]**2 + X[:, 1]**2).unsqueeze(1) + 0.1 * torch.randn(n_samples, 1)
+    return X, y
+
+def test_serial_and_parallel_plane_equal_and_timing2():
     """
     Verify that the serial _evaluate_plane and the parallel implementation in main
     return the same results on a small grid. Also print timing for comparison.
     """
-    steps = 3000
-    dir_one = Delta(0.7)
-    dir_two = Delta(0.3)
+    # Create model and data
+    print("1. Creating model and data...")
+    model = create_simple_model()
+    X, y = generate_data()
+    criterion = nn.MSELoss()
+    
+    # Wrap the model
+    print("2. Wrapping model with loss landscape interface...")
+    model_wrapper = SimpleModelWrapper(model)
+    
+    # Test forward pass
+    print("3. Testing forward pass...")
+    with torch.no_grad():
+        outputs = model_wrapper.forward(X)
+        loss = criterion(outputs, y)
+        print(f"   Initial loss: {loss.item():.4f}")
+    
+    # Create a metric to evaluate loss
+    print("4. Creating loss metric...")
+    loss_metric = Loss(criterion, X, y)
 
-    # SERIAL
-    wrapper_serial = DummyModelWrapper(0.0)
-    start_serial = wrapper_serial.get_module_parameters()
+    steps = 10
+
+    model_wrapper = wrap_model(copy.deepcopy(model))
+    start_point = model_wrapper.get_module_parameters()
+    dir_one = rand_u_like(start_point)
+    dir_two = orthogonal_to(dir_one)
+
+    dir_one.model_normalize_(start_point)
+    dir_two.model_normalize_(start_point)
+
+
+    # scale to match steps and total distance
+    dir_one.mul_(((start_point.model_norm()) / steps) / dir_one.model_norm())
+    dir_two.mul_(((start_point.model_norm()) / steps) / dir_two.model_norm())
+    # Move start point so that original start params will be in the center of the plot
+    dir_one.mul_(steps / 2)
+    dir_two.mul_(steps / 2)
+    start_point.sub_(dir_one)
+    start_point.sub_(dir_two)
+    dir_one.truediv_(steps / 2)
+    dir_two.truediv_(steps / 2)
+
 
     t0 = time.time()
-    serial_res = main._evaluate_plane(start_serial, dir_one, dir_two, steps, metric_identity, wrapper_serial)
+    serial_res = main._evaluate_plane_parallel(start_point, dir_one, dir_two, steps, loss_metric, model_wrapper, use_ray=False)
     t_serial = time.time() - t0
     print(f"Serial time: {t_serial:.6f}s")
 
-    wrapper_parallel = DummyModelWrapper(0.0)
-    start_parallel = wrapper_parallel.get_module_parameters()
 
     t0 = time.time()
-    parallel_res = main._evaluate_plane_parallel(start_parallel, dir_one, dir_two, steps,
-                                                    metric_identity, wrapper_parallel,
-                                                    use_ray=True, ray_init_kwargs=None, num_workers=3)
+    parallel_res = main._evaluate_plane_parallel(start_point, dir_one, dir_two, steps, loss_metric, model_wrapper, use_ray=True)
     t_parallel = time.time() - t0
-    print(f"Parallel (simulated) time: {t_parallel:.6f}s")
+    print(f"Parallel time: {t_parallel:.6f}s")
 
 
-    # Both should be numpy arrays with same shape and values
+    print(serial_res)
+    print(parallel_res)
+
+     # Both should be numpy arrays with same shape and values
     serial_arr = np.asarray(serial_res)
     parallel_arr = np.asarray(parallel_res)
     assert serial_arr.shape == parallel_arr.shape
     npt.assert_allclose(serial_arr, parallel_arr, rtol=1e-7, atol=1e-9)
+
+
+# def test_serial_and_parallel_plane_equal_and_timing():
+#     """
+#     Verify that the serial _evaluate_plane and the parallel implementation in main
+#     return the same results on a small grid. Also print timing for comparison.
+#     """
+#     steps = 3000
+#     dir_one = Delta(0.7)
+#     dir_two = Delta(0.3)
+
+#     # SERIAL
+#     wrapper_serial = DummyModelWrapper(0.0)
+#     start_serial = wrapper_serial.get_module_parameters()
+
+#     t0 = time.time()
+#     serial_res = main._evaluate_plane(start_serial, dir_one, dir_two, steps, metric_identity, wrapper_serial)
+#     t_serial = time.time() - t0
+#     print(f"Serial time: {t_serial:.6f}s")
+
+#     wrapper_parallel = DummyModelWrapper(0.0)
+#     start_parallel = wrapper_parallel.get_module_parameters()
+
+#     t0 = time.time()
+#     parallel_res = main._evaluate_plane_parallel(start_parallel, dir_one, dir_two, steps,
+#                                                     metric_identity, wrapper_parallel,
+#                                                     use_ray=True, ray_init_kwargs=None, num_workers=3)
+#     t_parallel = time.time() - t0
+#     print(f"Parallel (simulated) time: {t_parallel:.6f}s")
+
+
+#     # Both should be numpy arrays with same shape and values
+#     serial_arr = np.asarray(serial_res)
+#     parallel_arr = np.asarray(parallel_res)
+#     assert serial_arr.shape == parallel_arr.shape
+#     npt.assert_allclose(serial_arr, parallel_arr, rtol=1e-7, atol=1e-9)

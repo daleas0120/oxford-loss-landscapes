@@ -120,7 +120,7 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
         num_workers = min(steps, max(1, available_cpus))
 
     @ray.remote
-    def eval_row(sp, dir_one_, dir_two_, steps_, metric_, wrapper_, row_idx):
+    def eval_row(sp, dir_one_, dir_two_, steps_, metric_, wrapper_):
         data_column = []
         for j in range(steps_):
             if j % 2 == 0:
