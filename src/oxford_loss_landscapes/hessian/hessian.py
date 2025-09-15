@@ -20,12 +20,10 @@ def npvec_to_tensorlist(vec, params):
     """
     loc = 0
     rval = []
-    print(f'Converting vector of size {vec.size} to tensor list with {len(params)} parameters')
     for p in params:
         numel = p.data.numel()
         rval.append(torch.from_numpy(vec[loc:loc+numel]).view(p.data.shape).float())
         loc += numel
-    print(f'The vector has a {loc} elements and the net has {vec.size} parameters')
     assert loc == vec.size, f'ERROR: The vector has a {loc} elements and the net has {vec.size} parameters'
     return rval
 
@@ -41,14 +39,14 @@ def gradtensor_to_npvec(net, all_params=True):
         Returns:
             a concatenated numpy vector containing all gradients
     """
-    filter = lambda p: all_params or len(p.data.size()) >= 1
+    param_filter = lambda p: all_params or len(p.data.size()) >= 1
 
     # tmp_list = [p.grad.data.cpu().numpy().ravel() for p in net.parameters() if filter(p)]
     tmp_list = []
     for p in net.parameters():
         if p.grad is None:
             tmp_list.append(np.zeros(p.data.numel(), dtype=np.float32))
-        elif filter(p):
+        elif param_filter(p):
             tmp_list.append(p.grad.data.cpu().numpy().ravel())
     # print("grad tensor list size: ", len(tmp_list))
 
