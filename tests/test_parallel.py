@@ -111,43 +111,16 @@ def test_serial_and_parallel_plane_equal_and_timing():
     t_serial = time.time() - t0
     print(f"Serial time: {t_serial:.6f}s")
 
-    # PARALLEL (use a fake actor implementation so tests do not require real Ray cluster)
-    # Monkeypatch pieces of `main` used by _evaluate_plane_parallel:
-    orig_plane_worker = getattr(main, "PlaneWorker", None)
-    orig_ray = getattr(main, "ray", None)
-    orig_initialize = getattr(main, "initialize_ray", None)
+    wrapper_parallel = DummyModelWrapper(0.0)
+    start_parallel = wrapper_parallel.get_module_parameters()
 
-    try:
-        main.PlaneWorker = _make_fake_plane_worker()
-        # ray.get is expected to return the list of results as-is
-        main.ray = types.SimpleNamespace(get=lambda x: x)
-        # skip real initialization
-        main.initialize_ray = lambda kwargs=None: True
+    t0 = time.time()
+    parallel_res = main._evaluate_plane_parallel(start_parallel, dir_one, dir_two, steps,
+                                                    metric_identity, wrapper_parallel,
+                                                    use_ray=True, ray_init_kwargs=None, num_workers=3)
+    t_parallel = time.time() - t0
+    print(f"Parallel (simulated) time: {t_parallel:.6f}s")
 
-        wrapper_parallel = DummyModelWrapper(0.0)
-        start_parallel = wrapper_parallel.get_module_parameters()
-
-        t0 = time.time()
-        parallel_res = main._evaluate_plane_parallel(start_parallel, dir_one, dir_two, steps,
-                                                     metric_identity, wrapper_parallel,
-                                                     use_ray=True, ray_init_kwargs=None, num_workers=3)
-        t_parallel = time.time() - t0
-        print(f"Parallel (simulated) time: {t_parallel:.6f}s")
-
-    finally:
-        # restore patched names
-        if orig_plane_worker is not None:
-            main.PlaneWorker = orig_plane_worker
-        else:
-            delattr(main, "PlaneWorker")
-        if orig_ray is not None:
-            main.ray = orig_ray
-        else:
-            delattr(main, "ray")
-        if orig_initialize is not None:
-            main.initialize_ray = orig_initialize
-        else:
-            delattr(main, "initialize_ray")
 
     # Both should be numpy arrays with same shape and values
     serial_arr = np.asarray(serial_res)

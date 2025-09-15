@@ -8,6 +8,7 @@ import numpy as np
 from tqdm import trange
 import ray # for parallel processing
 import os
+import traceback
 
 from .model_interface.model_wrapper import ModelWrapper, wrap_model
 from .model_interface.model_parameters import rand_u_like, orthogonal_to
@@ -108,36 +109,66 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
     if not use_ray or ray is None:
         return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
 
-    # initialize ray
-    try:
-        initialize_ray(ray_init_kwargs)
-    except Exception:
-        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
+    # initialize ray if needed
+    if not ray.is_initialized():
+        ray.init(**(ray_init_kwargs or {}))
 
-    workers_count = choose_num_workers(num_workers, steps)
-    print(f"Chosen number of workers: {workers_count}")
+    # choose number of workers
+    try:
+        available_cpus = int(ray.available_resources().get("CPU", os.cpu_count() or 1))
+    except Exception:
+        available_cpus = os.cpu_count() or 1
+    if num_workers is None:
+        num_workers = min(steps, max(1, available_cpus))
+
+    # Ray actor: each actor owns a deepcopy of the model wrapper and the metric,
+    # and computes one or more rows independently by mutating its own parameters.
+    @ray.remote
+    class _RayWorker:
+        def __init__(self, model_wrapper_, metric_):
+            # each worker must have its own copy so parameter mutations are local
+            self.model_wrapper = copy.deepcopy(model_wrapper_)
+            self.metric = metric_
+
+        def eval_row(self, dir_one_, dir_two_, row_idx, steps_):
+            # get local reference to parameters and reproduce the same
+            # "top-left" shift that sequential code applied before iterating rows
+            start_p = self.model_wrapper.get_module_parameters()
+            start_p.sub_(dir_one_)
+            start_p.sub_(dir_two_)
+
+            # move to the requested row
+            for _ in range(row_idx):
+                start_p.add_(dir_one_)
+
+            data_column = []
+            for j in range(steps_):
+                if j % 2 == 0:
+                    start_p.add_(dir_two_)
+                    data_column.append(self.metric(self.model_wrapper))
+                else:
+                    start_p.sub_(dir_two_)
+                    data_column.insert(0, self.metric(self.model_wrapper))
+            return data_column
 
     # create actors
-    try:
-        workers = [PlaneWorker.remote(model_wrapper, metric) for _ in range(workers_count)]
-        print(f"Using {workers_count} Ray workers for parallel evaluation.")
-    except Exception:
-        # actor creation failed; fallback
-        print("Failed to create Ray actors; falling back to sequential evaluation.")
-        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
+    workers = [ _RayWorker.remote(model_wrapper, metric) for _ in range(num_workers) ]
 
-    # schedule row tasks round-robin
+    # schedule row tasks round-robin across workers
     futures = []
-    for i in range(int(steps)):
-        worker = workers[i % workers_count]
-        futures.append(worker.eval_plane_row.remote(dir_one, dir_two, i, steps))
+    for i in range(steps):
+        worker = workers[i % num_workers]
+        futures.append(worker.eval_row.remote(dir_one, dir_two, i, steps))
 
+    # collect results and assemble matrix (rows as returned)
     try:
         results = ray.get(futures)
     except Exception:
+        # if remote execution fails for any reason, fallback to sequential
+        print("Warning: Ray remote execution failed, falling back to sequential evaluation.")
+        traceback.print_exc()
         return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
 
-    # results is list of rows in order i=0..steps-1
     return np.array(results)
 
 
