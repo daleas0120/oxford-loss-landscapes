@@ -47,7 +47,7 @@ from .main import (
 )
 
 # Model interface
-from .model_interface.model_wrapper import ModelWrapper, SimpleModelWrapper
+from .model_interface.model_wrapper import ModelWrapper, GeneralModelWrapper, SimpleModelWrapper, TransformerModelWrapper
 from .model_interface.model_parameters import rand_u_like
 
 # Metrics
@@ -66,7 +66,9 @@ __all__ = [
     "planar_interpolation",
     "random_plane",
     "ModelWrapper",
+    "GeneralModelWrapper",
     "SimpleModelWrapper",
+    "TransformerModelWrapper",
     "rand_u_like",
     "download_model",
     "download_zenodo_zip",

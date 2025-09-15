@@ -219,13 +219,22 @@ class ModelParameters:
         :param order: norm order, e.g. 2 for L2 norm
         :return: none
         """
+        eps = 1e-12  # Small epsilon to prevent division by zero
+        
         for l in range(len(self.parameters)):
             # normalize one-dimensional bias vectors
             if len(self.parameters[l].size()) == 1:
-                self.parameters[l] *= (ref_point.parameters[l].norm(order) / self.parameters[l].norm(order))
+                ref_norm = ref_point.parameters[l].norm(order)
+                self_norm = self.parameters[l].norm(order)
+                if self_norm > eps:
+                    self.parameters[l] *= (ref_norm / self_norm)
             # normalize two-dimensional weight vectors
-            for f in range(len(self.parameters[l])):
-                self.parameters[l][f] *= ref_point.filter_norm((l, f), order) / (self.filter_norm((l, f), order))
+            else:
+                for f in range(len(self.parameters[l])):
+                    ref_filter_norm = ref_point.filter_norm((l, f), order)
+                    self_filter_norm = self.filter_norm((l, f), order)
+                    if self_filter_norm > eps:
+                        self.parameters[l][f] *= ref_filter_norm / self_filter_norm
 
     def model_norm(self, order=2) -> float:
         """
