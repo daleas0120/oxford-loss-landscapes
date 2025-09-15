@@ -95,8 +95,7 @@ class TransformerLoss(Metric):
                 'input_ids': self.inputs,
                 'attention_mask': self.attention_mask
             }
-            if self.attention_mask is not None:
-                model_inputs['attention_mask'] = self.attention_mask
+            # The attention_mask is already set in model_inputs; no need to reassign.
             outputs = model_wrapper.forward(model_inputs)
         
         # Extract logits (handle different transformer output formats)
