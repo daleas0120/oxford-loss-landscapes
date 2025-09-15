@@ -4,6 +4,33 @@ from dash.dependencies import Input, Output
 import numpy as np
 import plotly.graph_objs as go
 from dash.dependencies import State
+
+# Define functions
+def get_cube_edges_and_points(x_min, x_max, y_min, y_max, z_min, z_max):
+    """
+    Returns the 8 cube corner points and the 12 edge index pairs for a cube
+    bounded by the given min/max values.
+    """
+    # Define the 8 corners of the cube
+    cube_points = [
+        [x_min, y_min, z_min],
+        [x_max, y_min, z_min],
+        [x_max, y_max, z_min],
+        [x_min, y_max, z_min],
+        [x_min, y_min, z_max],
+        [x_max, y_min, z_max],
+        [x_max, y_max, z_max],
+        [x_min, y_max, z_max],
+    ]
+
+    # Define the 12 edges as pairs of point indices
+    edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0],  # bottom face
+        [4, 5], [5, 6], [6, 7], [7, 4],  # top face
+        [0, 4], [1, 5], [2, 6], [3, 7],  # vertical edges
+    ]
+    return cube_points, edges
+
 # Load data
 landscape = np.genfromtxt('examples/example_loss_landscape_bandgap_Fe_ood.csv', delimiter=',', usecols=None)
 x = np.linspace(-1, 1, landscape.shape[0])
@@ -13,31 +40,8 @@ X, Y = np.meshgrid(x, y, indexing='ij')
 fig1 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis')])
 fig2 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis', showscale=False, opacity=0.5)])
 
-
-# Get the current axis limits
-x0, x1 = float(x.min()), float(x.max())
-y0, y1 = float(y.min()), float(y.max())
-z0, z1 = float(landscape.min()), float(landscape.max())
-
-# Define the 8 corners of the cube
-cube_points = [
-    [x0, y0, z0],
-    [x1, y0, z0],
-    [x1, y1, z0],
-    [x0, y1, z0],
-    [x0, y0, z1],
-    [x1, y0, z1],
-    [x1, y1, z1],
-    [x0, y1, z1],
-]
-
-# Define the 12 edges as pairs of point indices
-edges = [
-    [0, 1], [1, 2], [2, 3], [3, 0],  # bottom face
-    [4, 5], [5, 6], [6, 7], [7, 4],  # top face
-    [0, 4], [1, 5], [2, 6], [3, 7],  # vertical edges
-]
-
+# Get cube points and edges
+cube_points, edges = get_cube_edges_and_points(float(x.min()), float(x.max()), float(y.min()), float(y.max()), float(np.min(landscape)), float(np.max(landscape)))
 # Add a line for each edge
 for i, j in edges:
     fig2.add_trace(go.Scatter3d(
@@ -78,17 +82,17 @@ app.layout = html.Div([
     html.H2("3D Loss Landscape Dashboard (Dash)"),
     html.Div([
         html.Div([
-            html.Label("X min"),
+            html.Label("Direction 1 min"),
             dcc.Slider(id='x-min', min=float(x.min()), max=float(x.max()), value=float(x.min()), step=0.01),
-            html.Label("X max"),
+            html.Label("Direction 1 max"),
             dcc.Slider(id='x-max', min=float(x.min()), max=float(x.max()), value=float(x.max()), step=0.01),
-            html.Label("Y min"),
+            html.Label("Direction 2 min"),
             dcc.Slider(id='y-min', min=float(y.min()), max=float(y.max()), value=float(y.min()), step=0.01),
-            html.Label("Y max"),
+            html.Label("Direction 2 max"),
             dcc.Slider(id='y-max', min=float(y.min()), max=float(y.max()), value=float(y.max()), step=0.01),
-            html.Label("Z min"),
+            html.Label("Loss min"),
             dcc.Slider(id='z-min', min=float(np.min(landscape)), max=float(np.max(landscape)), value=float(np.min(landscape)), step=0.01),
-            html.Label("Z max"),
+            html.Label("Loss max"),
             dcc.Slider(id='z-max', min=float(np.min(landscape)), max=float(np.max(landscape)), value=float(np.max(landscape)), step=0.01),
             html.Br(),
             html.Label("Notes / Textboard"),
@@ -109,7 +113,7 @@ app.layout = html.Div([
 ])
 
 
-# Main callback for figures and camera display
+# Callback for figures and camera display
 @app.callback(
     [Output('surface-plot1', 'figure'),
      Output('surface-plot2', 'figure')],
@@ -124,9 +128,18 @@ app.layout = html.Div([
 def update_figures(x_min, x_max, y_min, y_max, z_min, z_max, camera_eye):
     if camera_eye is None:
         return dash.no_update, dash.no_update
-
-    if 'scene.camera' in camera_eye or 'x-min' in camera_eye or 'x-max' in camera_eye or 'y-min' in camera_eye or 'y-max' in camera_eye or 'z-min' in camera_eye or 'z-max' in camera_eye:
-        
+    
+    if 'surface-plot1.relayoutData' in callback_context.triggered[0]['prop_id'] and 'scene.camera' in camera_eye:
+        # Update layout with new camera
+        fig1.layout.scene.camera = camera_eye['scene.camera']
+        fig2.layout.scene.camera = camera_eye['scene.camera']
+        return fig1, fig2
+   
+    elif any(
+    f"{axis}.value" in callback_context.triggered[0]['prop_id']
+    for axis in ['x-min', 'x-max', 'y-min', 'y-max', 'z-min', 'z-max']
+    ):    
+        # Update figure 1 with new axis ranges
         layout = dict(
             scene=dict(
              xaxis=dict(title='Direction 1', range=[x_min, x_max]),
@@ -135,15 +148,20 @@ def update_figures(x_min, x_max, y_min, y_max, z_min, z_max, camera_eye):
          ),
         )
         fig1.update_layout(**layout)
-        fig1.layout.scene.camera = camera_eye['scene.camera']
-        fig2.layout.scene.camera = camera_eye['scene.camera']
-        fig2.update_layout(uirevision='static', dragmode=False)
-        #camera_text = f"Current camera eye: x = {camera_eye['x']}, y = {camera_eye['y']}, z = {camera_eye['z']}"
-        return fig1, fig2
 
+        # Update figure 2 focues cube
+        # Get cube points and edges
+        cube_points, edges = get_cube_edges_and_points(x_min, x_max, y_min, y_max, z_min, z_max)
+        # Add a line for each edge
+        for idx, (i, j) in enumerate(edges):
+            fig2.data[idx + 1].x = [cube_points[i][0], cube_points[j][0]]
+            fig2.data[idx + 1].y = [cube_points[i][1], cube_points[j][1]]
+            fig2.data[idx + 1].z = [cube_points[i][2], cube_points[j][2]]
+        return fig1, fig2 
+     
     return dash.no_update, dash.no_update
 
 
 
 if __name__ == "__main__":
-    app.run_server(port=8080, debug=True)
+    app.run_server(port=8091, debug=True)
