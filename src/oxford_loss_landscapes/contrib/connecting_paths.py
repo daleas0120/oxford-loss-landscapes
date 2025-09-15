@@ -1,7 +1,6 @@
 """
 This module exposes functions for loss landscape operations which are more complex than simply
-computing the loss at different points in parameter space. This includes things such as Kolsbjerg
-et al.'s Automated Nudged Elastic Band algorithm.
+computing the loss at different points in parameter space.
 """
 
 
@@ -68,7 +67,10 @@ class _BezierCurve(_ParametricCurve):
 
 
 def auto_neb() -> np.ndarray:
-    """ Automatic Nudged Elastic Band algorithm, as used in https://arxiv.org/abs/1803.00885 """
+    """ 
+    Automatic Nudged Elastic Band algorithm. For mor information, see Kolsbjerg et al (2016) 
+    doi: https://doi.org/10.1063/1.4961868. 
+    """
     raise NotImplementedError()
 
 
