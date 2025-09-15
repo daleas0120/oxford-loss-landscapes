@@ -47,7 +47,7 @@ def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper)
 
 
 def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model_wrapper,
-                            use_ray: bool = True, ray_init_kwargs: dict = None, num_workers: int = None):
+                            use_ray: bool = False, ray_init_kwargs: dict = None, num_workers: int = None):
     """
     Parameters
     ----------
@@ -120,7 +120,7 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
         num_workers = min(steps, max(1, available_cpus))
 
     @ray.remote
-    def eval_row(sp, dir_one_, dir_two_, steps_, metric_, wrapper_):
+    def eval_row(sp, dir_one_, dir_two_, steps_, metric_, wrapper_, row_idx):
         data_column = []
         for j in range(steps_):
             if j % 2 == 0:
