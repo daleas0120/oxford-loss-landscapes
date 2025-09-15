@@ -1,6 +1,8 @@
+"""Tests for Hessian computations and utilities."""
+
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 import numpy as np
 
 def test_hessian_imports():

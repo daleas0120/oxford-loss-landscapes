@@ -6,6 +6,9 @@ This directory contains the test suite for the Oxford Loss Landscapes package.
 
 - `conftest.py` - Test configuration and fixtures
 - `test_basic.py` - Basic functionality tests
+- `test_hessian.py` - Tests hessian implementations
+- `test_model_wrapper.py` - Tests the model loading and wrapping API
+- `test_utils.py` - Tests the volume calculation, gpu-->cpu model param conversions, etc.
 - Future test modules will be added here
 
 ## Running Tests

@@ -1,6 +1,6 @@
+"""Tests for utility functions in oxford_loss_landscapes.utils."""
+
 import pytest
-import torch
-import torch.nn as nn
 import numpy as np
 
 def test_estimate_surf_vol():

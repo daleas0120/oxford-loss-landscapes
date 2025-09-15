@@ -1,9 +1,12 @@
+"""Tests for the model loading and wrapping API."""
+
 import pytest
 import torch
 import torch.nn as nn
 import numpy as np
 
 def test_init_model_wrapper():
+    """Test that ModelWrapper can be imported and initialized."""
     try:
         from oxford_loss_landscapes.model_interface.model_wrapper import ModelWrapper
         from oxford_loss_landscapes.model_interface.model_wrapper import SimpleModelWrapper
