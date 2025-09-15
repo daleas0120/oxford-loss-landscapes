@@ -6,21 +6,21 @@ import plotly.graph_objs as go
 from dash.dependencies import State
 
 # Define functions
-def get_cube_edges_and_points(x_min, x_max, y_min, y_max, z_min, z_max):
+def get_cube_edges_and_points(slider_values):
     """
     Returns the 8 cube corner points and the 12 edge index pairs for a cube
     bounded by the given min/max values.
     """
     # Define the 8 corners of the cube
     cube_points = [
-        [x_min, y_min, z_min],
-        [x_max, y_min, z_min],
-        [x_max, y_max, z_min],
-        [x_min, y_max, z_min],
-        [x_min, y_min, z_max],
-        [x_max, y_min, z_max],
-        [x_max, y_max, z_max],
-        [x_min, y_max, z_max],
+        [slider_values[0], slider_values[2], slider_values[4]],
+        [slider_values[1], slider_values[2], slider_values[4]],
+        [slider_values[1], slider_values[3], slider_values[4]],
+        [slider_values[0], slider_values[3], slider_values[4]],
+        [slider_values[0], slider_values[2], slider_values[5]],
+        [slider_values[1], slider_values[2], slider_values[5]],
+        [slider_values[1], slider_values[3], slider_values[5]],
+        [slider_values[0], slider_values[3], slider_values[5]],
     ]
 
     # Define the 12 edges as pairs of point indices
@@ -31,17 +31,33 @@ def get_cube_edges_and_points(x_min, x_max, y_min, y_max, z_min, z_max):
     ]
     return cube_points, edges
 
+def get_landscape_summary(slider_value_data, slider_min_data, slider_step_data):
+    """
+    Returns text summary of loss landscape from current selection.
+    """
+    row_min = int((slider_value_data[0] - slider_min_data['x_min']) / slider_step_data['x_step'])
+    row_max = int((slider_value_data[1] - slider_min_data['x_min']) / slider_step_data['x_step'])
+    col_min = int((slider_value_data[2] - slider_min_data['y_min']) / slider_step_data['y_step'])
+    col_max = int((slider_value_data[3] - slider_min_data['y_min']) / slider_step_data['y_step'])
+    min_val = np.min(landscape[row_min:row_max, col_min:col_max])
+    max_val = np.max(landscape[row_min:row_max, col_min:col_max])
+
+    lol_summary_txt= f"Minimum Loss: {min_val:.4f}\nMaximum Loss: {max_val:.4f}"
+    return lol_summary_txt
+
 # Load data
 landscape = np.genfromtxt('examples/example_loss_landscape_bandgap_Fe_ood.csv', delimiter=',', usecols=None)
-x = np.linspace(-1, 1, landscape.shape[0])
-y = np.linspace(-1, 1, landscape.shape[1])
+x = np.linspace(1, landscape.shape[0], landscape.shape[0])
+y = np.linspace(1, landscape.shape[1], landscape.shape[1])
 X, Y = np.meshgrid(x, y, indexing='ij')
+
 
 fig1 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis')])
 fig2 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis', showscale=False, opacity=0.5)])
 
 # Get cube points and edges
-cube_points, edges = get_cube_edges_and_points(float(x.min()), float(x.max()), float(y.min()), float(y.max()), float(np.min(landscape)), float(np.max(landscape)))
+slider_values_init = [float(x.min()), float(x.max()), float(y.min()), float(y.max()), float(np.min(landscape)), float(np.max(landscape))]
+cube_points, edges = get_cube_edges_and_points(slider_values_init)
 # Add a line for each edge
 for i, j in edges:
     fig2.add_trace(go.Scatter3d(
@@ -78,25 +94,24 @@ fig2.update_layout(uirevision='static', dragmode=False)
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
-    #dcc.Store(id='camera-store', data={'x': 2, 'y': 2, 'z': 0.5}),
+    dcc.Store(id='slider-min-store', data={'x_min': float(np.min(x)), 'y_min': float(np.min(y)), 'z_min': float(np.min(landscape))}),
+    dcc.Store(id='slider-step-store', data={'x_step': x[1] - x[0], 'y_step': y[1] - y[0]}),
     html.H2("3D Loss Landscape Dashboard (Dash)"),
     html.Div([
         html.Div([
-            html.Label("Direction 1 min"),
-            dcc.Slider(id='x-min', min=float(x.min()), max=float(x.max()), value=float(x.min()), step=0.01),
+            html.Label(" Direction 1 min"),
+            dcc.Slider(id='slider-x-min', min=float(x.min()), max=float(x.max()), value=float(x.min()), step=x[1] - x[0], marks=None),
             html.Label("Direction 1 max"),
-            dcc.Slider(id='x-max', min=float(x.min()), max=float(x.max()), value=float(x.max()), step=0.01),
+            dcc.Slider(id='slider-x-max', min=float(x.min()), max=float(x.max()), value=float(x.max()), step=x[1] - x[0], marks=None),
             html.Label("Direction 2 min"),
-            dcc.Slider(id='y-min', min=float(y.min()), max=float(y.max()), value=float(y.min()), step=0.01),
+            dcc.Slider(id='slider-y-min', min=float(y.min()), max=float(y.max()), value=float(y.min()), step=y[1] - y[0], marks=None),
             html.Label("Direction 2 max"),
-            dcc.Slider(id='y-max', min=float(y.min()), max=float(y.max()), value=float(y.max()), step=0.01),
+            dcc.Slider(id='slider-y-max', min=float(y.min()), max=float(y.max()), value=float(y.max()), step=y[1] - y[0], marks=None),
             html.Label("Loss min"),
-            dcc.Slider(id='z-min', min=float(np.min(landscape)), max=float(np.max(landscape)), value=float(np.min(landscape)), step=0.01),
+            dcc.Slider(id='slider-z-min', min=float(np.min(landscape)), max=float(np.max(landscape)), value=float(np.min(landscape)), step=0.01, marks=None),
             html.Label("Loss max"),
-            dcc.Slider(id='z-max', min=float(np.min(landscape)), max=float(np.max(landscape)), value=float(np.max(landscape)), step=0.01),
-            html.Br(),
-            html.Label("Notes / Textboard"),
-            dcc.Textarea(id='textboard', value='', style={'width': '100%', 'height': 100}),
+            dcc.Slider(id='slider-z-max', min=float(np.min(landscape)), max=float(np.max(landscape)), value=float(np.max(landscape)), step=0.01, marks=None),
+
         ], style={'width': '25%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '20px'}),
         html.Div([
             html.Div([
@@ -106,8 +121,15 @@ app.layout = html.Div([
             ], style={'width': '59%', 'display': 'inline-block', 'verticalAlign': 'top'}),
             html.Div([
                 dcc.Graph(id='surface-plot2', style={'height': '400px', 'width': '100%'}, figure=fig2,
-                          config={"displayModeBar": True})
+                          config={"displayModeBar": True}),
+                html.Br(),
+                html.Div([
+                    dcc.Markdown(id='landscape_summary',children="**Bold text** and _italic text_")
+                ],style={'border': '2px solid #888','padding': '16px','margin': '16px 0','borderRadius': '8px',
+                    'backgroundColor': '#f9f9f9','fontWeight': 'bold','textAlign': 'center'
+                })  
             ], style={'width': '39%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+            
         ], style={'width': '70%', 'display': 'inline-block', 'verticalAlign': 'top'}),
     ]) 
 ])
@@ -117,12 +139,12 @@ app.layout = html.Div([
 @app.callback(
     [Output('surface-plot1', 'figure'),
      Output('surface-plot2', 'figure')],
-    [Input('x-min', 'value'),
-     Input('x-max', 'value'),
-     Input('y-min', 'value'),
-     Input('y-max', 'value'),
-     Input('z-min', 'value'),
-     Input('z-max', 'value'),
+    [Input('slider-x-min', 'value'),
+     Input('slider-x-max', 'value'),
+     Input('slider-y-min', 'value'),
+     Input('slider-y-max', 'value'),
+     Input('slider-z-min', 'value'),
+     Input('slider-z-max', 'value'),
      Input('surface-plot1', 'relayoutData')]
 )
 def update_figures(x_min, x_max, y_min, y_max, z_min, z_max, camera_eye):
@@ -151,7 +173,8 @@ def update_figures(x_min, x_max, y_min, y_max, z_min, z_max, camera_eye):
 
         # Update figure 2 focues cube
         # Get cube points and edges
-        cube_points, edges = get_cube_edges_and_points(x_min, x_max, y_min, y_max, z_min, z_max)
+        slider_values = [x_min, x_max, y_min, y_max, z_min, z_max]
+        cube_points, edges = get_cube_edges_and_points(slider_values)
         # Add a line for each edge
         for idx, (i, j) in enumerate(edges):
             fig2.data[idx + 1].x = [cube_points[i][0], cube_points[j][0]]
@@ -163,5 +186,25 @@ def update_figures(x_min, x_max, y_min, y_max, z_min, z_max, camera_eye):
 
 
 
+# Callback for updating landscape summary
+@app.callback(
+    [Output('landscape_summary', 'children')],
+    [Input('slider-x-min', 'value'),
+     Input('slider-x-max', 'value'),
+     Input('slider-y-min', 'value'),
+     Input('slider-y-max', 'value'),
+     Input('slider-z-min', 'value'),
+     Input('slider-z-max', 'value'),
+     Input('slider-min-store', 'data'),
+     Input('slider-step-store', 'data')]
+)
+
+def update_summary(xmin_val, xmax_val, ymin_val, ymax_val, zmin_val, zmax_val, slider_min_data, slider_step_data):
+
+    slider_value_data = [xmin_val, xmax_val, ymin_val, ymax_val, zmin_val, zmax_val]
+    summary_text = get_landscape_summary(slider_value_data, slider_min_data, slider_step_data)
+    
+    return [f"```\n{summary_text}\n```"]
+
 if __name__ == "__main__":
-    app.run_server(port=8091, debug=True)
+    app.run_server(port=8093, debug=True)
