@@ -47,7 +47,7 @@ from .main import (
 )
 
 # Model interface
-from .model_interface.model_wrapper import ModelWrapper, GeneralModelWrapper, SimpleModelWrapper
+from .model_interface.model_wrapper import ModelWrapper, SimpleModelWrapper
 from .model_interface.model_parameters import rand_u_like
 
 # Metrics
@@ -66,7 +66,6 @@ __all__ = [
     "planar_interpolation",
     "random_plane",
     "ModelWrapper",
-    "GeneralModelWrapper",
     "SimpleModelWrapper",
     "rand_u_like",
     "download_model",
