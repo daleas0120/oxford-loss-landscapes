@@ -5,6 +5,8 @@ import copy
 import typing
 import torch.nn
 import numpy as np
+import os
+import datetime
 from tqdm import trange
 
 from .model_interface.model_wrapper import ModelWrapper, wrap_model
@@ -12,10 +14,11 @@ from .model_interface.model_parameters import rand_n_like, orthogonal_to
 from .metrics.metric import Metric
 
 
-def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper):
+def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper, export):
     """
     Helper function to evaluate a planar region in parameter space.
     This avoids code duplication between planar_interpolation and random_plane.
+    Exports binary out put to results folder if export is True, else outputs numpy array.
     """
     data_matrix = []
     # evaluate loss in grid of (steps * steps) points, where each column signifies one step
@@ -39,7 +42,22 @@ def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper)
         data_matrix.append(data_column)
         start_point.add_(dir_one)
 
-    return np.array(data_matrix)
+    if export:
+        _export_plane_to_npy(data_matrix)
+    else:
+        return np.array(data_matrix)
+
+def _export_plane_to_npy(data_matrix):
+    """
+    Exports the data_matrix as a .npy binary file in a folder called 'results' in the current working directory.
+    """
+    results_dir = os.path.join(os.getcwd(), "results")
+    os.makedirs(results_dir, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{timestamp}_LOLxAI.npy"
+    file_path = os.path.join(results_dir, filename)
+    np.save(file_path, data_matrix)
+    print(f"Saved plane data to {file_path}")
 
 
 def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) -> tuple:
@@ -63,7 +81,7 @@ def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) ->
 
 def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end: typing.Union[torch.nn.Module, ModelWrapper],
-                         metric: Metric, steps=100, deepcopy_model=False, distance=1) -> np.ndarray:
+                         metric: Metric, steps=100, deepcopy_model=False) -> np.ndarray:
     """
     Returns the computed value of the evaluation function applied to the model or
     agent along a linear subspace of the parameter space defined by two end points.
@@ -101,12 +119,8 @@ def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     end_model_wrapper = wrap_model(copy.deepcopy(model_end) if deepcopy_model else model_end)
 
     start_point = model_start_wrapper.get_module_parameters()
-    # end_point = distance*end_model_wrapper.get_module_parameters()
-    direction = distance*end_model_wrapper.get_module_parameters()
-
-    direction.mul_(steps / 2)
-    start_point.sub_(direction)
-    direction.truediv_(steps / 2)
+    end_point = end_model_wrapper.get_module_parameters()
+    direction = (end_point - start_point) / steps
 
     data_values = []
     for _ in trange(steps, desc='Calculating...'):
@@ -236,11 +250,11 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     start_point = model_start_wrapper.get_module_parameters()
 
     if eigen_models:
-        dir_one = distance*(model_end_one_wrapper.get_module_parameters()) / steps
-        dir_two = distance*(model_end_two_wrapper.get_module_parameters()) / steps
+        dir_one = (model_end_one_wrapper.get_module_parameters()) / steps
+        dir_two = (model_end_two_wrapper.get_module_parameters()) / steps
     else:
-        dir_one = distance*(model_end_one_wrapper.get_module_parameters() - start_point) / steps
-        dir_two = distance*(model_end_two_wrapper.get_module_parameters() - start_point) / steps
+        dir_one = (model_end_one_wrapper.get_module_parameters() - start_point) / steps
+        dir_two = (model_end_two_wrapper.get_module_parameters() - start_point) / steps
 
     # scale to match steps and total distance
     # dir_one.mul_(((start_point.model_norm() * distance) / steps) / dir_one.model_norm())
@@ -257,7 +271,7 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
 
 
 def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric, distance=1, steps=20,
-                 normalization='filter', deepcopy_model=False) -> np.ndarray:
+                 normalization='filter', deepcopy_model=False, export = False) -> np.ndarray:
     """
     Returns the computed value of the evaluation function applied to the model or agent along a planar
     subspace of the parameter space defined by a start point and two randomly sampled directions.
@@ -327,5 +341,7 @@ def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Met
     dir_one.truediv_(steps / 2)
     dir_two.truediv_(steps / 2)
 
-    return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
+    return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper, export)
 
+
+# todo add hypersphere function
