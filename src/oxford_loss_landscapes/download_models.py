@@ -111,7 +111,8 @@ def extract_zip(zip_path, extract_dir):
             # Build list of extracted file paths
             for file_name in file_list:
                 extracted_path = os.path.join(extract_dir, file_name)
-                if os.path.isfile(extracted_path):  # Only add actual files, not directories
+                # Only add actual files, not directories
+                if os.path.isfile(extracted_path):
                     extracted_files.append(extracted_path)
                     print(f"Extracted: {file_name}")
         
