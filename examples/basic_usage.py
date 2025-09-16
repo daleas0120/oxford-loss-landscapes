@@ -96,8 +96,8 @@ def main():
             plt.grid(True, alpha=0.3)
             plt.savefig('loss_landscape_example.png', dpi=150, bbox_inches='tight')
             plt.close()
-            print(f"   Saved loss landscape plot to 'loss_landscape_example.png'")
-        except Exception as e:
+            print("   Saved loss landscape plot to 'loss_landscape_example.png'")
+        except (RuntimeError, ValueError) as e:
             print(f"   Visualization skipped: {e}")
         
         print("\n✓ Example completed successfully!")

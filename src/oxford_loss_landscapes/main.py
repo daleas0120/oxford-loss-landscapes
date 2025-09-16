@@ -64,7 +64,7 @@ def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) ->
 
 def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end: typing.Union[torch.nn.Module, ModelWrapper],
-                         metric: Metric, steps=100, deepcopy_model=False) -> np.ndarray:
+                         metric: Metric, steps=100, deepcopy_model=False, distance=1) -> np.ndarray:
     """
     Returns the computed value of the evaluation function applied to the model or
     agent along a linear subspace of the parameter space defined by two end points.
@@ -102,7 +102,7 @@ def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     end_model_wrapper = wrap_model(copy.deepcopy(model_end) if deepcopy_model else model_end)
 
     start_point = model_start_wrapper.get_module_parameters()
-    end_point = end_model_wrapper.get_module_parameters()
+    end_point = distance*end_model_wrapper.get_module_parameters()
     direction = (end_point - start_point) / steps
 
     data_values = []
@@ -231,11 +231,11 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     start_point = model_start_wrapper.get_module_parameters()
 
     if eigen_models:
-        dir_one = (model_end_one_wrapper.get_module_parameters()) / steps
-        dir_two = (model_end_two_wrapper.get_module_parameters()) / steps
+        dir_one = distance*(model_end_one_wrapper.get_module_parameters()) / steps
+        dir_two = distance*(model_end_two_wrapper.get_module_parameters()) / steps
     else:
-        dir_one = (model_end_one_wrapper.get_module_parameters() - start_point) / steps
-        dir_two = (model_end_two_wrapper.get_module_parameters() - start_point) / steps
+        dir_one = distance*(model_end_one_wrapper.get_module_parameters() - start_point) / steps
+        dir_two = distance*(model_end_two_wrapper.get_module_parameters() - start_point) / steps
 
     # scale to match steps and total distance
     # dir_one.mul_(((start_point.model_norm() * distance) / steps) / dir_one.model_norm())
@@ -326,5 +326,3 @@ def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Met
 
     return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
 
-
-# todo add hypersphere function
