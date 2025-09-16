@@ -62,7 +62,6 @@ def test_trapezoidal_area():
     assert isinstance(volume_rect, (float, np.floating))
 
 
-
 def test_move_landscape_to_cpu():
     """
     Test the move_landscape_to_cpu function.
