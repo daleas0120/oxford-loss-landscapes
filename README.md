@@ -6,7 +6,6 @@ Loss Landscapes for EXplainable AI - A Python library for visualizing and analyz
 
 This package provides tools for:
 
-
 - Computing and visualizing loss landscapes of neural networks
 - Analyzing Hessian properties of loss functions
 - Downloading and managing models from research datasets
@@ -21,7 +20,6 @@ The package automatically installs all dependencies including PyTorch:
 ```bash
 pip install -e .
 ```
-
 
 This single command installs:
 
@@ -40,7 +38,6 @@ pip install -e .[dev]
 
 ### Optional Dependencies
 
-
 For transformer model support:
 
 ```bash
@@ -55,6 +52,14 @@ pip install -e ".[advanced]"
 ```
 
 This includes: plotly, ipywidgets, jupyter, scikit-learn, torchvision
+
+### Installation with requirements.txt
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install -e .
+```
 
 ### Python Version Compatibility
 
@@ -92,7 +97,6 @@ loss_value = oll.point(model_wrapper)
 print(f"Current loss: {loss_value}")
 ```
 
-
 ## Features
 
 ### Core Loss Landscape Functions
@@ -104,14 +108,12 @@ print(f"Current loss: {loss_value}")
 - `planar_interpolation()`: Loss over a 2D plane between three points  
 - `random_plane()`: Loss over a random 2D plane
 
-
 ### Model Interface
 
 - `ModelWrapper`: Interface for PyTorch models
-- `GeneralModelWrapper`: Interface for arbitrary models
+- `SimpleModelWrapper`: Interface for simple models
 
 ### Utilities
-
 
 - Model downloading from Zenodo datasets
 - Hessian computation tools

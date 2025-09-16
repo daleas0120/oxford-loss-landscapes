@@ -6,14 +6,33 @@ from various sources including Zenodo.
 """
 
 import os
-import requests
-import zipfile
 from io import BytesIO
-from tqdm import tqdm
 import argparse
+import zipfile
+import requests
+from tqdm import tqdm
 
 
-def download_zenodo_zip(record_id, output_file="models.zip", extract_dir=None):
+def download_zenodo_model(record_id, output_file, extract_dir=None):
+    """
+    Download a specific model file from Zenodo by record ID.
+    
+    Args:
+        record_id (str): Zenodo record ID
+        model_filename (str): Specific model filename to download
+        extract_dir (str, optional): Directory to extract files to if ZIP
+    """
+
+    zip_file = download_zenodo_zip(record_id, output_file)
+
+    if extract_dir:
+        extracted_files = extract_zip(zip_file, extract_dir)
+        return {'zip_file': zip_file, 'extracted_files': extracted_files}
+
+    return {'zip_file': zip_file}
+
+
+def download_zenodo_zip(record_id, output_file="models.zip"):
     """
     Download a ZIP file from Zenodo by record ID.
     
@@ -23,12 +42,14 @@ def download_zenodo_zip(record_id, output_file="models.zip", extract_dir=None):
         extract_dir (str, optional): Directory to extract files to
     
     Returns:
-        str: Path to downloaded file
+        dict: Information about download and extraction
+            - 'zip_file': Path to downloaded ZIP file
+            - 'extracted_files': List of extracted file paths (if extracted)
     """
     url = f"https://zenodo.org/api/records/{record_id}/files"
     
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=30)  # Add 30 second timeout
         response.raise_for_status()
         files = response.json()['entries']
         
@@ -43,7 +64,7 @@ def download_zenodo_zip(record_id, output_file="models.zip", extract_dir=None):
         print(f"Downloading {file_info['key']} ({file_size} bytes)...")
         
         # Download with progress bar
-        response = requests.get(download_url, stream=True)
+        response = requests.get(download_url, stream=True, timeout=30)  # Add 30 second timeout
         response.raise_for_status()
         
         with open(output_file, 'wb') as f:
@@ -55,33 +76,48 @@ def download_zenodo_zip(record_id, output_file="models.zip", extract_dir=None):
         
         print(f"Downloaded: {output_file}")
         
-        # Extract if requested
-        if extract_dir:
-            extract_zip(output_file, extract_dir)
-        
         return output_file
         
     except requests.RequestException as e:
-        raise RuntimeError(f"Failed to download from Zenodo: {e}")
+        raise RuntimeError(f"Failed to download from Zenodo: {e}") from e
     except Exception as e:
-        raise RuntimeError(f"Download error: {e}")
+        raise RuntimeError(f"Download error: {e}") from e
 
 
 def extract_zip(zip_path, extract_dir):
     """
-    Extract a ZIP file to a directory.
+    Extract a ZIP file to a directory and return list of extracted files.
     
     Args:
         zip_path (str): Path to ZIP file
         extract_dir (str): Directory to extract to
+        
+    Returns:
+        list: List of extracted file paths
     """
     try:
         os.makedirs(extract_dir, exist_ok=True)
         
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
+        extracted_files = []
         
-        print(f"Extracted to: {extract_dir}")
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            # Get list of files in the ZIP
+            file_list = zip_ref.namelist()
+            print(f"Found {len(file_list)} files in ZIP archive")
+            
+            # Extract all files
+            zip_ref.extractall(extract_dir)
+            
+            # Build list of extracted file paths
+            for file_name in file_list:
+                extracted_path = os.path.join(extract_dir, file_name)
+                # Only add actual files, not directories
+                if os.path.isfile(extracted_path):
+                    extracted_files.append(extracted_path)
+                    print(f"Extracted: {file_name}")
+        
+        print(f"Successfully extracted {len(extracted_files)} files to: {extract_dir}")
+        return extracted_files
         
     except zipfile.BadZipFile:
         raise ValueError(f"Invalid ZIP file: {zip_path}")
@@ -89,35 +125,8 @@ def extract_zip(zip_path, extract_dir):
         raise RuntimeError(f"Extraction error: {e}")
 
 
-def download_model(model_name="default", output_dir="./models"):
-    """
-    Download a specific model by name.
-    
-    Args:
-        model_name (str): Name of model to download
-        output_dir (str): Directory to save model to
-        
-    Returns:
-        str: Path to downloaded model
-    """
-    # Placeholder for model-specific download logic
-    models = {
-        "default": "1234567",  # Example Zenodo record ID
-    }
-    
-    if model_name not in models:
-        available = ", ".join(models.keys())
-        raise ValueError(f"Unknown model '{model_name}'. Available: {available}")
-    
-    record_id = models[model_name]
-    output_file = os.path.join(output_dir, f"{model_name}_model.zip")
-    
-    os.makedirs(output_dir, exist_ok=True)
-    
-    return download_zenodo_zip(record_id, output_file, output_dir)
 
-
-def main():
+def main(argv=None):
     """Command line interface for downloading models."""
     parser = argparse.ArgumentParser(description="Download models from Zenodo")
     parser.add_argument(
@@ -134,14 +143,18 @@ def main():
         help="Zenodo record ID to download from"
     )
     
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     
     try:
         if args.record_id:
-            download_zenodo_zip(args.record_id, args.output, args.extract_dir)
+            result = download_zenodo_model(args.record_id, args.output, args.extract_dir)
+            print("Download completed successfully!")
+            print(f"ZIP file: {result['zip_file']}")
+            if result['extracted_files']:
+                print(f"Extracted {len(result['extracted_files'])} files")
         else:
             print("Please provide a --record-id to download from Zenodo")
-            print("Example: oxford-download-models --record-id 1234567 --extract-dir ./models")
+            return 1
             
     except Exception as e:
         print(f"Error: {e}")

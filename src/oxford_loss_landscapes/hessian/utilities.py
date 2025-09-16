@@ -27,8 +27,7 @@ def get_weights(net):
         
     return [deepcopy(p.data) for p in net.parameters()]
 
-def set_weights(net, 
-                weights):
+def set_weights(net, weights):
     """ 
     Set neural network parameters.
 
@@ -54,8 +53,7 @@ def tensorlist_to_tensor(weights):
     
     return torch.cat([w.view(w.numel()) if w.dim() > 1 else torch.FloatTensor(w) for w in weights])
 
-def npvec_to_tensorlist(flattened_weights, 
-                        params):
+def npvec_to_tensorlist(flattened_weights, params):
     """ Convert a numpy vector to a list of tensors with the same shape as "params".
 
         Args:
@@ -83,9 +81,7 @@ def npvec_to_tensorlist(flattened_weights,
         assert(idx == len(flattened_weights))
         return s2
         
-def covariance(x, 
-               y,
-               number_ensembles):
+def covariance(x, y, number_ensembles):
     """ Compute covriance associated with tensors x,y.
 
         Args:
@@ -317,12 +313,19 @@ def add_new_ensemble_members(u,
     return u, ensemble_members
 
 
-def force_wts_into_model(og_layer_names, new_model_wts, empty_model, old_model_state_dict):
+def copy_wts_into_model(new_wts_vector, model):
+    """
+    Copy a new weights vector into a model.
+    """
 
-    new_model_wt_dict = deepcopy(old_model_state_dict)
+    layer_names = model.state_dict().keys()
+    print(layer_names)
 
-    for layer, new_param in zip(og_layer_names, new_model_wts):
-        if new_param.shape == old_model_state_dict[layer].shape:
+    new_model_wt_dict = deepcopy(model.state_dict())
+    empty_model = deepcopy(model)
+
+    for layer, new_param in zip(layer_names, new_wts_vector):
+        if new_param.shape == new_model_wt_dict[layer].shape:
             new_model_wt_dict[layer] = new_param
         else:
             print(layer+" incompatible")
@@ -331,3 +334,4 @@ def force_wts_into_model(og_layer_names, new_model_wts, empty_model, old_model_s
     print(err_layers)
 
     return empty_model
+    

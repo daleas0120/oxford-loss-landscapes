@@ -13,39 +13,20 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
 
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
 # Try to import the package
 try:
     import oxford_loss_landscapes as oll
-    from oxford_loss_landscapes.model_interface.model_wrapper import SimpleModelWrapper
+    from oxford_loss_landscapes.model_interface.model_wrapper import TransformerModelWrapper
     print(f"✓ Successfully imported oxford_loss_landscapes version {oll.__version__}")
 except ImportError as e:
     print(f"✗ Failed to import package: {e}")
     exit(1)
 
 
-def create_simple_model():
-    """Create a simple neural network for demonstration."""
-    model = nn.Sequential(
-        nn.Linear(2, 10),
-        nn.ReLU(),
-        nn.Linear(10, 5),
-        nn.ReLU(),
-        nn.Linear(5, 1)
-    )
-    return model
-
-
-def generate_data(n_samples=100):
-    """Generate simple synthetic data for demonstration."""
-    # Generate 2D input data
-    X = torch.randn(n_samples, 2)
-    # Simple target: sum of squares
-    y = (X[:, 0]**2 + X[:, 1]**2).unsqueeze(1) + 0.1 * torch.randn(n_samples, 1)
-    return X, y
-
-
 def main():
-    print("Oxford Loss Landscapes - Example Usage")
+    print("Oxford Loss Landscapes - Example Usage For Transformers")
     print("=" * 40)
     
     # Set random seed for reproducibility
@@ -53,36 +34,36 @@ def main():
     
     # Create model and data
     print("1. Creating model and data...")
-    model = create_simple_model()
-    X, y = generate_data(100)
-    criterion = nn.MSELoss()
+    tokenizer = AutoTokenizer.from_pretrained('gpt2')
+    model = AutoModelForCausalLM.from_pretrained('gpt2')
+
+    text = "Look for the bear necessities, the simple bear necessities."
+    print(f"    Sample text: {text}")
+    encoded_input = tokenizer(text, return_tensors='pt')
+    output = model(**encoded_input)
+
+    criterion = nn.CrossEntropyLoss()
     
     # Wrap the model
     print("2. Wrapping model with loss landscape interface...")
-    model_wrapper = SimpleModelWrapper(model)
-    
-    # Test forward pass
-    print("3. Testing forward pass...")
-    with torch.no_grad():
-        outputs = model_wrapper.forward(X)
-        loss = criterion(outputs, y)
-        print(f"   Initial loss: {loss.item():.4f}")
+    model_wrapper = TransformerModelWrapper(model, tokenizer)
     
     # Create a metric to evaluate loss
-    print("4. Creating loss metric...")
+    print("3. Creating loss metric...")
     try:
-        from oxford_loss_landscapes.metrics import Loss
-        loss_metric = Loss(criterion, X, y)
+        from oxford_loss_landscapes.metrics import LanguageModelingLoss
+        loss_metric = LanguageModelingLoss(encoded_input['input_ids'])
         
         # Test loss landscape functions
-        print("5. Computing loss at current point...")
+        print("4. Computing loss at current point...")
         current_loss = oll.point(model_wrapper, loss_metric)
         print(f"   Current loss: {current_loss:.4f}")
         
         # Simple visualization example
-        print("6. Creating simple loss visualization...")
+        print("5. Creating simple loss visualization...")
         try:
             # Compute a 1D loss line
+            model_path = 'transformer_loss_landscape_example.png'
             line_losses = oll.random_line(model_wrapper, loss_metric, distance=1.0, steps=25)
             
             # Plot the line
@@ -94,10 +75,10 @@ def main():
             plt.title('1D Loss Landscape (Random Direction)')
             plt.legend()
             plt.grid(True, alpha=0.3)
-            plt.savefig('loss_landscape_example.png', dpi=150, bbox_inches='tight')
+            plt.savefig(model_path, dpi=150, bbox_inches='tight')
             plt.close()
-            print("   Saved loss landscape plot to 'loss_landscape_example.png'")
-        except (RuntimeError, ValueError) as e:
+            print(f"   Saved loss landscape plot to {model_path}")
+        except Exception as e:
             print(f"   Visualization skipped: {e}")
         
         print("\n✓ Example completed successfully!")

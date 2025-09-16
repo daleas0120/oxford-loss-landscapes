@@ -1,6 +1,5 @@
 """Test configuration and fixtures."""
 
-import pytest
 import torch
 
 # Set random seed for reproducible tests
