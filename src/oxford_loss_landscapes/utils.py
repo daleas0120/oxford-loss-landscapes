@@ -2,7 +2,25 @@ import numpy as np
 import scipy
 
 def estimate_surf_vol(x_range: tuple, y_range: tuple, z_array: np.array):
-    """Wrapper function for the trapezoidal_area function to match the signature of other functions in this file."""
+    """
+    Estimate the volume under a surface defined by the given ranges and z-values.
+
+    This function is a wrapper for `trapezoidal_area` and is used to match the signature of other functions in this file.
+
+    Parameters
+    ----------
+    x_range : tuple
+        The range of x values as (x_min, x_max).
+    y_range : tuple
+        The range of y values as (y_min, y_max).
+    z_array : np.array
+        A 2D numpy array of z values representing the surface heights at each (x, y) grid point.
+
+    Returns
+    -------
+    float
+        The estimated volume under the surface.
+    """
     return trapezoidal_area(x_range, y_range, z_array)
 
 
