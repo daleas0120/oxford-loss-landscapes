@@ -120,16 +120,17 @@ def test_weights_init():
     )
     original_params = [p.clone() for p in model.parameters()]   
 
+    param_idx = 0
     for layer in model:
         if hasattr(layer, 'weight') and layer.weight is not None:
             weights_init(layer)
             # Check that weights have changed
-            assert not torch.allclose(layer.weight, original_params.pop(0))
+            assert not torch.allclose(layer.weight, original_params[param_idx])
+            param_idx += 1
             if layer.bias is not None:
-                assert not torch.allclose(layer.bias, original_params.pop(0))
-        else:
-            continue
-    assert len(original_params) == 0, "Not all parameters were checked."
+                assert not torch.allclose(layer.bias, original_params[param_idx])
+                param_idx += 1
+    assert param_idx == len(original_params), "Not all parameters were checked."
 
 def test_get_weights():
     """Test getting weights from a model."""
