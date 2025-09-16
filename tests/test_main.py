@@ -160,8 +160,6 @@ def test_point():
     X = torch.randn(20, 3)
     y = torch.randn(20, 1)
 
-
-
     model_wrapper = SimpleModelWrapper(model)
     criterion = nn.MSELoss()
     loss_metric = Loss(criterion, X, y)
