@@ -53,6 +53,14 @@ pip install -e ".[advanced]"
 
 This includes: plotly, ipywidgets, jupyter, scikit-learn, torchvision
 
+### Installation with requirements.txt
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install -e .
+```
+
 ### Python Version Compatibility
 
 - **Python 3.8-3.12**: Uses PyTorch >=1.8.0 and NumPy <2.0
