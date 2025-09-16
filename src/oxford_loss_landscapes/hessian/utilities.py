@@ -27,8 +27,7 @@ def get_weights(net):
         
     return [deepcopy(p.data) for p in net.parameters()]
 
-def set_weights(net, 
-                weights):
+def set_weights(net, weights):
     """ 
     Set neural network parameters.
 
@@ -54,8 +53,7 @@ def tensorlist_to_tensor(weights):
     
     return torch.cat([w.view(w.numel()) if w.dim() > 1 else torch.FloatTensor(w) for w in weights])
 
-def npvec_to_tensorlist(flattened_weights, 
-                        params):
+def npvec_to_tensorlist(flattened_weights, params):
     """ Convert a numpy vector to a list of tensors with the same shape as "params".
 
         Args:
@@ -83,9 +81,7 @@ def npvec_to_tensorlist(flattened_weights,
         assert(idx == len(flattened_weights))
         return s2
         
-def covariance(x, 
-               y,
-               number_ensembles):
+def covariance(x, y, number_ensembles):
     """ Compute covriance associated with tensors x,y.
 
         Args:
