@@ -2,10 +2,7 @@ import numpy as np
 import scipy
 
 def estimate_surf_vol(x_range: tuple, y_range: tuple, z_array: np.array):
-    """
-    wrapper function for the trapezoidal_area function
-    to match the signature of other functions in this file.
-    """
+    """Wrapper function for the trapezoidal_area function to match the signature of other functions in this file."""
     return trapezoidal_area(x_range, y_range, z_array)
 
 
