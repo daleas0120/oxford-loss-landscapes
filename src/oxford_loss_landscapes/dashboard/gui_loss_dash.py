@@ -4,6 +4,8 @@ from dash.dependencies import Input, Output
 import numpy as np
 import plotly.graph_objs as go
 from dash.dependencies import State
+import os
+import datetime
 
 # Define functions
 def get_cube_edges_and_points(slider_values):
@@ -46,7 +48,17 @@ def get_landscape_summary(slider_value_data, slider_min_data, slider_step_data):
     return lol_summary_txt
 
 # Load data
-landscape = np.genfromtxt('/Users/cdharding/Downloads/gpt2_loss_landscape.csv', delimiter=',', usecols=None)
+results_dir = os.path.join(os.getcwd(), "results")
+npy_files = [f for f in os.listdir(results_dir) if f.endswith('.npy')]
+npy_files_sorted = sorted(
+    npy_files,
+    key=lambda fname: (
+        datetime.datetime.strptime(fname.split('_LOLxAI.npy')[0], "%Y%m%d_%H%M%S")
+        if '_LOLxAI.npy' in fname else datetime.datetime.min
+    ),
+    reverse=True 
+)
+landscape = np.load(os.path.join(results_dir, npy_files_sorted[0]))
 x = np.linspace(1, landscape.shape[0], landscape.shape[0])
 y = np.linspace(1, landscape.shape[1], landscape.shape[1])
 X, Y = np.meshgrid(x, y, indexing='ij')
@@ -99,6 +111,9 @@ app.layout = html.Div([
     html.H2("3D Loss Landscape Dashboard (Dash)"),
     html.Div([
         html.Div([
+            html.Label("Select landscape file"),
+            dcc.Dropdown(id='landscape-dropdown',options=[{'label': fname, 'value': fname} for fname in npy_files_sorted],
+            value=npy_files_sorted[0],clearable=False,style={'marginBottom': '20px'}),
             html.Label(" Direction 1 min"),
             dcc.Slider(id='slider-x-min', min=float(x.min()), max=float(x.max()), value=float(x.min()), step=x[1] - x[0], marks=None),
             html.Label("Direction 1 max"),
