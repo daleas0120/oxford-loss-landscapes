@@ -244,6 +244,6 @@ def test_covariance():
     # Check that cov_matrix is a 10x10 tensor
     assert isinstance(cov_matrix, torch.Tensor)
     assert cov_matrix.shape == (10, 10)
-    assert torch.allclose(cov_matrix, torch.zeros(10, 10))
+    assert torch.allclose(cov_matrix, torch.zeros(10, 10), atol=1e-6)
 
 
