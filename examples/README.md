@@ -5,15 +5,19 @@ This directory contains example scripts demonstrating how to use the Oxford Loss
 ## Available Examples
 
 ### Basic Usage
+
 - `basic_usage.py` - Basic introduction to the package functionality
+- `transformer_usage.py` - Basic introduction to using the Hugging Face Transformer Wrapper
 - `README.md` - This file
 
 ### Hessian Analysis  
+
 - `hessian_analysis_guide.py` - Comprehensive guide to Hessian eigenvalue analysis concepts
 - `hessian_eigenvalue_analysis.py` - Practical example of computing Hessian eigenvalues and eigenvectors
 - `simple_hessian_analysis.py` - Simple demonstration of Hessian computation
 
 ### Planned Examples
+
 - Loss landscape visualization examples
 - Model comparison examples  
 - Advanced metrics usage examples
@@ -27,9 +31,22 @@ pip install -e .
 ```
 
 This single command installs:
+
 - PyTorch (version automatically selected for your Python version)  
 - All numerical computation dependencies (NumPy, SciPy, pandas)
 - Package-specific dependencies (torchdiffeq, etc.)
+
+> Note: To use the transformers and advanced visualization, need to install additional dependencies
+>
+> ```bash
+> pip install -e ".[transformers]"
+> ```
+>
+> and
+>
+>```bash
+> pip install -e ".[advanced]"
+> ```
 
 Then run the examples:
 
@@ -47,6 +64,7 @@ python examples/hessian_eigenvalue_analysis.py
 ## Hessian Analysis Examples
 
 The Hessian analysis examples demonstrate how to:
+
 - Compute maximum and minimum eigenvalues of the Hessian matrix
 - Extract and analyze eigenvectors  
 - Interpret eigenvalue signs (local minimum vs saddle point)
@@ -66,11 +84,3 @@ max_eig, min_eig, max_eigvec, min_eigvec, iterations = min_max_hessian_eigs(
 # Estimate trace (sum of eigenvalues)
 trace = hessian_trace(model, criterion, inputs, targets)
 ```
-
-## Example Categories
-
-- **Basic Usage**: Introduction to core functionality
-- **Hessian Analysis**: Second-order optimization analysis
-- **Loss Landscapes**: Computing and visualizing loss landscapes  
-- **Model Analysis**: Using metrics and model interface tools
-- **Data Processing**: Working with model data and downloads
