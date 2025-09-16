@@ -14,26 +14,29 @@ def load_transformer_weights(weights_path="../models/simple_transformer_weights.
     """Load the downloaded transformer weights."""
     
     # Load the saved weights
-    checkpoint = torch.load(weights_path, map_location='cpu')
+    model_checkpoint = torch.load(weights_path, map_location='cpu')
     
     print("Model Information:")
-    print(f"  Name: {checkpoint['model_name']}")
-    print(f"  Architecture: {checkpoint['architecture']}")
-    print(f"  Parameters: {checkpoint['num_parameters']:,}")
-    
-    return checkpoint
+    print(f"  Name: {model_checkpoint['model_name']}")
+    print(f"  Architecture: {model_checkpoint['architecture']}")
+    print(f"  Parameters: {model_checkpoint['num_parameters']:,}")
+
+    return model_checkpoint
 
 def create_model_for_analysis():
     """
     Create the transformer model for loss landscape analysis.
     """
-    checkpoint = load_transformer_weights()
+    transformer_checkpoint = load_transformer_weights()
     
-    if checkpoint.get('model_config', {}).get('type') == 'simple_transformer':
+    if transformer_checkpoint.get('model_config', {}).get('type') == 'simple_transformer':
         # Create simple transformer
         print("Creating simple transformer model...")
         
         class SimpleTransformerModel(nn.Module):
+            """
+            A simple transformer model for demonstration purposes.
+            """
             def __init__(self, vocab_size, hidden_size, num_layers, num_heads):
                 super().__init__()
                 self.hidden_size = hidden_size
@@ -59,7 +62,7 @@ def create_model_for_analysis():
                 logits = self.output_projection(output)
                 return logits
         
-        config = checkpoint['model_config']
+        config = transformer_checkpoint['model_config']
         model = SimpleTransformerModel(
             vocab_size=config['vocab_size'],
             hidden_size=config['hidden_size'],
@@ -68,7 +71,7 @@ def create_model_for_analysis():
         )
         
         # Load the weights
-        model.load_state_dict(checkpoint['model_state_dict'])
+        model.load_state_dict(transformer_checkpoint['model_state_dict'])
         model.eval()
         
         return model
@@ -114,10 +117,9 @@ def example_loss_landscape_analysis():
     try:
         import sys
         sys.path.append('..')  # Add parent directory to path
-        from src.oxford_loss_landscapes.model_interface.model_wrapper import ModelWrapper
+
         from src.oxford_loss_landscapes.main import point
-        from src.oxford_loss_landscapes.metrics.sl_metrics import Loss
-        
+        from src.oxford_loss_landscapes.model_interface.model_wrapper import SimpleModelWrapper
         # Create a simple metric
         from src.oxford_loss_landscapes.metrics.metric import Metric
         
@@ -132,7 +134,7 @@ def example_loss_landscape_analysis():
                 return self.loss_fn(output).item()
         
         # Wrap the model
-        from src.oxford_loss_landscapes.model_interface.model_wrapper import SimpleModelWrapper
+
         model_wrapper = SimpleModelWrapper(model)
         
         # Create the metric

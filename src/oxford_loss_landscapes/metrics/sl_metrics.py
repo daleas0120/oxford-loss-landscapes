@@ -62,7 +62,7 @@ class LossPerturbations(Metric):
 
         # compute start loss and perturbed losses
         results = []
-        for idx in range(self.n_directions):
+        for _ in range(self.n_directions):
             direction = rand_u_like(start_point)
             start_point.add_(direction)
 
