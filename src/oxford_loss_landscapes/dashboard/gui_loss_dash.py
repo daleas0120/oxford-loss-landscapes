@@ -46,14 +46,14 @@ def get_landscape_summary(slider_value_data, slider_min_data, slider_step_data):
     return lol_summary_txt
 
 # Load data
-landscape = np.genfromtxt('examples/example_loss_landscape_bandgap_Fe_ood.csv', delimiter=',', usecols=None)
+landscape = np.genfromtxt('/Users/cdharding/Downloads/gpt2_loss_landscape.csv', delimiter=',', usecols=None)
 x = np.linspace(1, landscape.shape[0], landscape.shape[0])
 y = np.linspace(1, landscape.shape[1], landscape.shape[1])
 X, Y = np.meshgrid(x, y, indexing='ij')
 
 
 fig1 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis')])
-fig2 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis', showscale=False, opacity=0.5)])
+fig2 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis', showscale=False, opacity=0.9)])
 
 # Get cube points and edges
 slider_values_init = [float(x.min()), float(x.max()), float(y.min()), float(y.max()), float(np.min(landscape)), float(np.max(landscape))]
