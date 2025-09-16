@@ -103,7 +103,6 @@ def test_random_line():
     assert isinstance(line, np.ndarray)
     assert len(line) == 5
     for point in line:
-        print(point)
         assert isinstance(point, float)
 
 def test_linear_interpolation():
