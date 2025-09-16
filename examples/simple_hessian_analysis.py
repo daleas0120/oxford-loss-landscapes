@@ -81,23 +81,23 @@ def main():
             print("→ Other critical point")
         
         # Eigenvector properties
-        print(f"\nEigenvector properties:")
+        print("Eigenvector properties:")
         print(f"Max eigenvector shape: {max_eigvec.shape}")
         print(f"Min eigenvector shape: {min_eigvec.shape}")
         print(f"Max eigenvector norm: {np.linalg.norm(max_eigvec):.6f}")
         print(f"Min eigenvector norm: {np.linalg.norm(min_eigvec):.6f}")
         
         # Estimate trace
-        print(f"\nComputing Hessian trace...")
-        trace = hessian_trace(model, criterion, X, y, num_samples=10)
+        print("Computing Hessian trace...")
+        trace = hessian_trace(model, criterion, X, y, num_random_vectors=10)
         print(f"Estimated trace: {trace:.6f}")
-        
-        print("\n✓ Hessian analysis completed successfully!")
+
+        print("✓ Hessian analysis completed successfully!")
         
     except ImportError as e:
-        print(f"✗ Import error: {e}")
+        print(f"Import error: {e}")
     except Exception as e:
-        print(f"✗ Computation error: {e}")
+        print(f"Computation error: {e}")
 
 if __name__ == "__main__":
     main()

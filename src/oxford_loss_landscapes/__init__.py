@@ -57,7 +57,7 @@ from .metrics import *
 from .contrib import *
 
 # Utilities
-from .download_models import download_model, download_zenodo_zip, extract_zip
+from .download_models import download_zenodo_model, download_zenodo_zip, extract_zip
 
 __all__ = [
     "point",
@@ -70,7 +70,7 @@ __all__ = [
     "SimpleModelWrapper",
     "TransformerModelWrapper",
     "rand_u_like",
-    "download_model",
+    "download_zenodo_model",
     "download_zenodo_zip",
     "extract_zip",
 ]
