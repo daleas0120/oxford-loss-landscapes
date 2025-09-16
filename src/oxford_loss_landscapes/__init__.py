@@ -47,7 +47,7 @@ from .main import (
 )
 
 # Model interface
-from .model_interface.model_wrapper import ModelWrapper, GeneralModelWrapper, SimpleModelWrapper
+from .model_interface.model_wrapper import ModelWrapper, GeneralModelWrapper, SimpleModelWrapper, TransformerModelWrapper
 from .model_interface.model_parameters import rand_u_like
 
 # Metrics
@@ -57,7 +57,7 @@ from .metrics import *
 from .contrib import *
 
 # Utilities
-from .download_models import download_model, download_zenodo_zip, extract_zip
+from .download_models import download_zenodo_model, download_zenodo_zip, extract_zip
 
 __all__ = [
     "point",
@@ -68,8 +68,9 @@ __all__ = [
     "ModelWrapper",
     "GeneralModelWrapper",
     "SimpleModelWrapper",
+    "TransformerModelWrapper",
     "rand_u_like",
-    "download_model",
+    "download_zenodo_model",
     "download_zenodo_zip",
     "extract_zip",
 ]

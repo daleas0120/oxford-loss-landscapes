@@ -143,7 +143,7 @@ def analyze_hessian_eigenvalues(model, X, y, criterion):
         # Estimate Hessian trace
         print(f"\nEstimating Hessian trace...")
         try:
-            trace_estimate = hessian_trace(model, criterion, X, y, num_samples=20)
+            trace_estimate = hessian_trace(model, criterion, X, y, num_random_vectors=20)
             avg_eigenvalue = trace_estimate / total_params
             print(f"✓ Estimated trace: {trace_estimate:.6f}")
             print(f"Average eigenvalue: {avg_eigenvalue:.6f}")

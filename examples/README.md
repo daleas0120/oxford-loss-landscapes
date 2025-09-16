@@ -7,6 +7,7 @@ This directory contains example scripts demonstrating how to use the Oxford Loss
 ### Basic Usage
 
 - `basic_usage.py` - Basic introduction to the package functionality
+- `transformer_usage.py` - Basic introduction to using the Hugging Face Transformer Wrapper
 - `README.md` - This file
 
 ### Hessian Analysis  
@@ -34,6 +35,18 @@ This single command installs:
 - PyTorch (version automatically selected for your Python version)  
 - All numerical computation dependencies (NumPy, SciPy, pandas)
 - Package-specific dependencies (torchdiffeq, etc.)
+
+> Note: To use the transformers and advanced visualization, need to install additional dependencies
+>
+> ```bash
+> pip install -e ".[transformers]"
+> ```
+>
+> and
+>
+>```bash
+> pip install -e ".[advanced]"
+> ```
 
 Then run the examples:
 
@@ -71,11 +84,3 @@ max_eig, min_eig, max_eigvec, min_eigvec, iterations = min_max_hessian_eigs(
 # Estimate trace (sum of eigenvalues)
 trace = hessian_trace(model, criterion, inputs, targets)
 ```
-
-## Example Categories
-
-- **Basic Usage**: Introduction to core functionality
-- **Hessian Analysis**: Second-order optimization analysis
-- **Loss Landscapes**: Computing and visualizing loss landscapes  
-- **Model Analysis**: Using metrics and model interface tools
-- **Data Processing**: Working with model data and downloads
