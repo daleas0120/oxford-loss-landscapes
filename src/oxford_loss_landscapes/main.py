@@ -142,7 +142,7 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
             else:
                 current_point.sub_(dir_two_) # Traverse left
             
-            local_wrapper.get_module_parameters().copy_(current_point) #this is where the erro ris occuring
+            local_wrapper.get_module_parameters() #TODO: need to copy parameters to local_wrapper
             data_column.append(metric_(local_wrapper))
             
         if row_idx % 2 != 0:
@@ -164,6 +164,7 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
         
     # collect results and assemble matrix (rows as returned)
     try:
+        print("Warning: Current parallel evaluation is incorrect.")
         results = ray.get(ray_tasks)
     except Exception:
         # if remote execution fails for any reason, fallback to sequential
