@@ -2,7 +2,7 @@
 
 This directory is intended for storing downloaded model files.
 
-Models downloaded using `oxford-download-models` or the `download_model()` function will be stored here by default.
+Models downloaded using `oxford-download-models` or the `download_zenodo_model()` function will be stored here by default.
 
 ## Usage
 

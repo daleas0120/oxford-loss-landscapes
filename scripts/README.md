@@ -20,5 +20,5 @@ Or in Python:
 
 ```python
 from oxford_loss_landscapes import download_model
-download_model()
+download_zenodo_model()
 ```

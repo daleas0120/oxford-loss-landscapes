@@ -45,6 +45,9 @@ def generate_data(n_samples=100):
 
 
 def main():
+    """
+    Main function to demonstrate the usage of the Oxford Loss Landscapes package.
+    """
     print("Oxford Loss Landscapes - Example Usage")
     print("=" * 40)
     
@@ -97,7 +100,7 @@ def main():
             plt.savefig('loss_landscape_example.png', dpi=150, bbox_inches='tight')
             plt.close()
             print(f"   Saved loss landscape plot to 'loss_landscape_example.png'")
-        except Exception as e:
+        except (ValueError, RuntimeError, TypeError, plt.matplotlib.MatplotlibError) as e:
             print(f"   Visualization skipped: {e}")
         
         print("\n✓ Example completed successfully!")

@@ -1,10 +1,8 @@
-"""
-Basic tests for the oxford_loss_landscapes package.
-"""
+"""Basic tests for the oxford_loss_landscapes package."""
 
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 def test_package_import():
@@ -13,7 +11,7 @@ def test_package_import():
         import oxford_loss_landscapes as oll
         assert hasattr(oll, 'point')
         assert hasattr(oll, 'ModelWrapper')
-        assert hasattr(oll, 'download_model')
+        assert hasattr(oll, 'download_zenodo_model')
     except ImportError as e:
         pytest.skip(f"Package not properly installed: {e}")
 

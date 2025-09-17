@@ -6,7 +6,6 @@
 import torch
 from torchdiffeq import odeint
 from copy import deepcopy
-import numpy as np
 
 def weights_init(m):
     if isinstance(m, torch.nn.Linear):
@@ -27,8 +26,7 @@ def get_weights(net):
         
     return [deepcopy(p.data) for p in net.parameters()]
 
-def set_weights(net, 
-                weights):
+def set_weights(net, weights):
     """ 
     Set neural network parameters.
 
@@ -54,8 +52,7 @@ def tensorlist_to_tensor(weights):
     
     return torch.cat([w.view(w.numel()) if w.dim() > 1 else torch.FloatTensor(w) for w in weights])
 
-def npvec_to_tensorlist(flattened_weights, 
-                        params):
+def npvec_to_tensorlist(flattened_weights, params):
     """ Convert a numpy vector to a list of tensors with the same shape as "params".
 
         Args:
@@ -80,12 +77,10 @@ def npvec_to_tensorlist(flattened_weights,
         for (k, w) in params.items():
             s2.append(flattened_weights[idx:idx + w.numel()]).clone().detach().view(w.size())
             idx += w.numel()
-        assert(idx == len(flattened_weights))
+        assert idx == len(flattened_weights)
         return s2
         
-def covariance(x, 
-               y,
-               number_ensembles):
+def covariance(x, y, number_ensembles):
     """ Compute covriance associated with tensors x,y.
 
         Args:
@@ -174,7 +169,7 @@ def generate_initial_ensemble(func,
 
     energies = torch.tensor([])
     
-    for j in range(ensemble_members):
+    for _ in range(ensemble_members):
 
         if number_layers != -1:
             func_enkf = func(number_layers, number_neurons)
@@ -252,11 +247,11 @@ def compute_F_u(u,
         pred_x = odeint(func_enkf, x0, t, method='dopri5')
         
         if solve_oc_problem:
-             reached_state = torch.tensor([pred_x[-1][0].clone().detach()])
-             G_u = torch.cat((G_u, reached_state))
+            reached_state = torch.tensor([pred_x[-1][0].clone().detach()])
+            G_u = torch.cat((G_u, reached_state))
         
-             control_energy = torch.tensor([pred_x[-1][1].clone().detach()])
-             energies = torch.cat((energies,control_energy))
+            control_energy = torch.tensor([pred_x[-1][1].clone().detach()])
+            energies = torch.cat((energies,control_energy))
              
         else:
             G_u = torch.cat((G_u, pred_x.clone().detach()))
@@ -299,7 +294,7 @@ def add_new_ensemble_members(u,
         
     u = torch.flatten(u)
     
-    for j in range(new_ensemble_members):
+    for _ in range(new_ensemble_members):
     
         if number_layers != -1:
             func_enkf = func(number_layers, number_neurons)

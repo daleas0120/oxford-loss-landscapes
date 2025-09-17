@@ -143,7 +143,7 @@ def analyze_hessian_eigenvalues(model, X, y, criterion):
         # Estimate Hessian trace
         print(f"\nEstimating Hessian trace...")
         try:
-            trace_estimate = hessian_trace(model, criterion, X, y, num_samples=20)
+            trace_estimate = hessian_trace(model, criterion, X, y, num_random_vectors=20)
             avg_eigenvalue = trace_estimate / total_params
             print(f"✓ Estimated trace: {trace_estimate:.6f}")
             print(f"Average eigenvalue: {avg_eigenvalue:.6f}")
@@ -154,7 +154,7 @@ def analyze_hessian_eigenvalues(model, X, y, criterion):
             print(f"Computed min eigenvalue: {min_eig:.6f}")
             print(f"Estimated avg eigenvalue: {avg_eigenvalue:.6f}")
             
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             print(f"✗ Error computing trace: {e}")
             trace_estimate = None
         
@@ -174,12 +174,14 @@ def analyze_hessian_eigenvalues(model, X, y, criterion):
         print("Make sure the oxford_loss_landscapes package is properly installed.")
         return None
         
-    except Exception as e:
+    except (ValueError, RuntimeError, TypeError, torch.cuda.CudaError, np.linalg.LinAlgError) as e:
         print(f"✗ Computation error: {e}")
         print("This might be due to numerical issues or incompatible NumPy versions.")
         return None
 
 def main():
+    """Main function to run the Hessian eigenvalue analysis example."""
+    
     print("Practical Hessian Eigenvalue Analysis")
     print("="*50)
     
