@@ -3,15 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Oxford Loss Landscapes documentation
-====================================
+Oxford Loss Landscapes
+======================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
-
+Loss Landscapes for EXplainable AI - A Python library for visualizing and analyzing neural network loss landscapes.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
 
+   installation
+   examples
+   features
+   cli
+   contributing
+   requirements
+   license
+   citation
