@@ -65,6 +65,7 @@ print(f"Hessian trace estimate: {trace}")
 **Purpose**: Compute the minimum and maximum eigenvalues of the Hessian matrix
 
 **Parameters**:
+
 - `model_wrapper`: Wrapped model with loss function and data
 - `loss_fn`: Optional loss function (uses wrapper's if None)
 - `use_cuda`: Whether to use GPU acceleration
@@ -78,6 +79,7 @@ print(f"Hessian trace estimate: {trace}")
 **Purpose**: Estimate the trace of the Hessian matrix using Hutchinson's method
 
 **Parameters**:
+
 - `model_wrapper`: Wrapped model with loss function and data
 - `loss_fn`: Optional loss function (uses wrapper's if None)
 - `num_random_vectors`: Number of random vectors for trace estimation
@@ -90,25 +92,30 @@ print(f"Hessian trace estimate: {trace}")
 ### Eigenvalues
 
 **Minimum Eigenvalue**:
+
 - **Negative**: Indicates saddle point or local maximum
 - **Near zero**: Very flat region, potential optimization challenges
 - **Positive**: Local minimum with convex behavior
 
 **Maximum Eigenvalue**:
+
 - **Large values**: Steep loss changes in some directions
 - **Affects**: Optimization stability and learning rate selection
 
 ### Condition Number (`max_eig / min_eig`)
+
 - **Measures**: Optimization difficulty
 - **Higher values**: More challenging optimization
 - **Values > 1000**: Often suggest numerical instability
 
 ### Eigenvectors
+
 - **Show**: Directions of extreme curvature
 - **Usage**: Understanding parameter contributions
 - **Applications**: Parameter space analysis and optimization
 
 ### Trace
+
 - **Represents**: Sum of all eigenvalues
 - **Relates to**: Overall "sharpness" of loss landscape
 - **Usage**: Comparing different models or training states
@@ -116,24 +123,29 @@ print(f"Hessian trace estimate: {trace}")
 ## Practical Applications
 
 ### 1. Learning Rate Selection
+
 - Use smaller learning rates for larger maximum eigenvalues
 - Consider the condition number for stability
 
 ### 2. Optimization Method Choice
+
 - High condition numbers may benefit from second-order methods
 - Low condition numbers work well with first-order methods
 
 ### 3. Model Comparison
+
 - Compare sharpness across different architectures
 - Evaluate training state changes
 
 ### 4. Training Dynamics
+
 - Monitor how the loss landscape changes during training
 - Identify convergence characteristics
 
 ## Example Workflows
 
 ### Workflow 1: Model Analysis
+
 ```python
 # Train your model first
 model.train()
@@ -156,6 +168,7 @@ print(f"  Loss landscape sharpness: {trace:.4f}")
 ```
 
 ### Workflow 2: Training Monitoring
+
 ```python
 # Monitor during training
 eigenvalue_history = []
@@ -205,6 +218,7 @@ for epoch, min_eig, max_eig in eigenvalue_history:
 ## Advanced Usage
 
 ### Custom Loss Functions
+
 ```python
 def custom_loss_fn(model_output):
     # Your custom loss computation
@@ -216,6 +230,7 @@ model_wrapper = ModelWrapper(model, custom_loss_fn, X)
 ```
 
 ### Batch Processing
+
 ```python
 # For large datasets, use batched analysis
 batch_size = 32
@@ -260,6 +275,7 @@ If you encounter issues:
 - `simple_hessian_analysis.py`: Minimal working example
 
 Run any example with:
+
 ```bash
 python examples/example_name.py
 ```
