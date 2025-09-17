@@ -52,7 +52,9 @@ dev = [
     "mypy>=0.910",
     "pre-commit>=2.15.0",
     "twine>=6.2.0",
-    "build"
+    "build",
+    "ipython",
+    "ipykernel"
 ]
 docs = [
     "sphinx>=4.0.0",
@@ -70,6 +72,10 @@ advanced = [
     "jupyter>=1.0.0",
     "scikit-learn>=1.0.0",
     "torchvision>=0.13.0",
+]
+pytorch_models = [
+    "torchvision",
+    "datasets"
 ]
 
 [project.urls]
