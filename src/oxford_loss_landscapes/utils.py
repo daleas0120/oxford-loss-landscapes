@@ -2,20 +2,32 @@ import numpy as np
 import scipy
 
 def estimate_surf_vol(x_range: tuple, y_range: tuple, z_array: np.array):
-    assert len(z_array.shape) == 2, 'z_array is not 2D'
-    num_x_steps, num_y_steps = z_array.shape
+    """
+    Estimate the volume under a surface defined by the given ranges and z-values.
 
-    x_min, x_max = x_range
-    y_min, y_max = y_range
+    This function is a wrapper for `trapezoidal_area` and is used to match the signature of other functions in this file.
 
-    x_interval = np.linspace(x_min, x_max, num_x_steps, endpoint=True)
-    y_interval = np.linspace(y_min, y_max, num_y_steps, endpoint=True)
+    Parameters
+    ----------
+    x_range : tuple
+        The range of x values as (x_min, x_max).
+    y_range : tuple
+        The range of y values as (y_min, y_max).
+    z_array : np.array
+        A 2D numpy array of z values representing the surface heights at each (x, y) grid point.
 
-    z_vol = np.trapz(x_interval, np.trapz(y_interval, z_array))
+    Returns
+    -------
+    float
+        The estimated volume under the surface.
+    """
+    return trapezoidal_area(x_range, y_range, z_array)
 
-    return z_vol
 
 def move_landscape_to_cpu(gpu_loss_landscape):
+    """
+    Convert a loss landscape computed on GPU (with PyTorch tensors) to a CPU-compatible format (nested lists of floats).
+    """
     cpu_loss_landscape = []
 
     for row in gpu_loss_landscape:
@@ -26,6 +38,7 @@ def move_landscape_to_cpu(gpu_loss_landscape):
         cpu_loss_landscape.append(tmp_row)
     return cpu_loss_landscape
 
+
 def trapezoidal_area(x_range: tuple, y_range: tuple, z_array: np.array):
     """Calculate volume under a surface defined by irregularly spaced points
     using delaunay triangulation. "x,y,z" is a <numpoints x 3> shaped ndarray."""
@@ -33,8 +46,9 @@ def trapezoidal_area(x_range: tuple, y_range: tuple, z_array: np.array):
     x_min, x_max = x_range
     y_min, y_max = y_range
 
-    X = np.arange(start=x_min, stop=x_max, step=1/num_x_steps)
-    Y = np.arange(start=y_min, stop=y_max, step=1/num_y_steps)
+    # Fix: Use linspace to create exactly the right number of points to match z_array
+    X = np.linspace(x_min, x_max, num_x_steps)
+    Y = np.linspace(y_min, y_max, num_y_steps)
     X, Y = np.meshgrid(X, Y)
     Z = z_array
 

@@ -49,6 +49,34 @@ class ModelWrapper(abc.ABC):
         pass
 
 
+class TransformerModelWrapper(ModelWrapper):
+    def __init__(self, model, tokenizer=None):
+        super().__init__([model])
+        self.tokenizer = tokenizer
+        self.model = model
+
+    def forward(self, inputs):
+        # eval mode
+        self.model.eval()
+        if isinstance(inputs, dict):
+            return self.model(**inputs)
+        elif isinstance(inputs, torch.Tensor):
+            return self.model(inputs)
+        else:
+            if self.tokenizer is None:
+                raise ValueError("Tokenizer required for text inputs")
+            encoded = self.tokenizer(inputs, return_tensors="pt")
+            return self.model(**encoded)
+
+    def get_module_parameters(self):
+        # Filter out embedding parameters if needed for stability
+        params = []
+        for name, param in self.model.named_parameters():
+            if 'embedding' not in name.lower():  # Optional: exclude embeddings
+                params.append(param)
+        return ModelParameters(params)
+
+
 class SimpleModelWrapper(ModelWrapper):
     def __init__(self, model: torch.nn.Module):
         super().__init__([model])
