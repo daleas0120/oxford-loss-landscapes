@@ -91,7 +91,7 @@ def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) ->
 
 def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end: typing.Union[torch.nn.Module, ModelWrapper],
-                         metric: Metric, steps=100, deepcopy_model=False) -> np.ndarray:
+                         metric: Metric, steps=100, deepcopy_model=False, distance=1.0) -> np.ndarray:
     """
     Returns the computed value of the evaluation function applied to the model or
     agent along a linear subspace of the parameter space defined by two end points.
