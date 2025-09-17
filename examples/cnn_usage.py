@@ -123,7 +123,7 @@ try:
         
         fig = plt.figure(figsize=(8, 6))
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(X, Y, np.log10(plane_losses), cmap='viridis', edgecolor='none', alpha=0.8)
+        ax.plot_surface(X, Y, np.log10(np.maximum(plane_losses, 1e-10)), cmap='viridis', edgecolor='none', alpha=0.8)
         ax.set_xlabel('Direction 1')
         ax.set_ylabel('Direction 2')
         ax.set_zlabel('Loss')
