@@ -15,7 +15,7 @@ from .model_interface.model_parameters import rand_n_like, orthogonal_to
 from .metrics.metric import Metric
 
 
-def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper, distance, export):
+def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper, distance=1.0, export=False):
     """
     Helper function to evaluate a planar region in parameter space.
     This avoids code duplication between planar_interpolation and random_plane.
@@ -129,17 +129,12 @@ def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     end_model_wrapper = wrap_model(copy.deepcopy(model_end) if deepcopy_model else model_end)
 
     start_point = model_start_wrapper.get_module_parameters()
-<<<<<<< HEAD
-    end_point = end_model_wrapper.get_module_parameters()
-    direction = (end_point - start_point) / steps
-=======
     # end_point = distance*end_model_wrapper.get_module_parameters()
     direction = distance*end_model_wrapper.get_module_parameters()
 
     direction.mul_(steps / 2)
     start_point.sub_(direction)
     direction.truediv_(steps / 2)
->>>>>>> 896f12642d5c98ac1507d706e72fd3d7383dbf89
 
     data_values = []
     for _ in trange(steps, desc='Calculating...'):
