@@ -175,7 +175,6 @@ def random_line(model_start: typing.Union[torch.nn.Module, ModelWrapper], metric
         raise AttributeError('Unsupported normalization argument. Supported values are model, layer, and filter')
 
     # direction.mul_(((start_point.model_norm() * distance) / steps) / direction.model_norm())
-    direction.mul_(steps / 2)
     start_point.sub_(direction)
     direction.truediv_(steps / 2)
 
