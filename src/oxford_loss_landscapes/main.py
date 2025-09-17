@@ -38,7 +38,6 @@ def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper)
 
         data_matrix.append(data_column)
         start_point.add_(dir_one)
-        # start_point.add_(dir_two)
 
     return np.array(data_matrix)
 
