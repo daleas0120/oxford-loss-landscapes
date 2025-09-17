@@ -99,7 +99,7 @@ def generate_data(n_samples=100):
     y = (X[:, 0]**2 + X[:, 1]**2).unsqueeze(1) + 0.1 * torch.randn(n_samples, 1)
     return X, y
 
-def test_serial_and_parallel_plane_equal_and_timing2():
+def test_serial_and_parallel_plane_equal_and_timing():
     """
     Verify that the serial _evaluate_plane and the parallel implementation in main
     return the same results on a small grid. Also print timing for comparison.

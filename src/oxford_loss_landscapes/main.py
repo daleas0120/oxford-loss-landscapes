@@ -119,32 +119,49 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
         num_workers = min(steps, max(1, available_cpus))
 
     @ray.remote
-    def eval_row(sp, dir_one_, dir_two_, steps_, metric_, wrapper_, row_idx):
+    def eval_row(sp_row_start, dir_one_, dir_two_, steps_, metric_, wrapper_, row_idx):
+        """
+        Evaluates a single row of the plane, accounting for snake-like traversal.
+        """
+        current_point = copy.deepcopy(sp_row_start)
         data_column = []
+        local_wrapper = copy.deepcopy(wrapper_)
+
+        # For odd rows, shift the starting point to the far right.
         if row_idx % 2 != 0:
-            sp.add_(dir_two_ * steps_)
+            # Create a new tensor representing the total horizontal shift
+            # by multiplying the direction vector by the number of steps.
+            total_shift = dir_two_ * steps_
+            # Add this single, scaled vector to the starting point.
+            current_point.add_(total_shift)
+
+        # The rest of the logic remains the same
         for _ in range(steps_):
             if row_idx % 2 == 0:
-                sp.add_(dir_two_)
+                current_point.add_(dir_two_) # Traverse right
             else:
-                sp.sub_(dir_two_)
-            data_column.append(metric_(wrapper_, sp))
-        
+                current_point.sub_(dir_two_) # Traverse left
+            
+            local_wrapper.get_module_parameters().copy_(current_point) #this is where the erro ris occuring
+            data_column.append(metric_(local_wrapper))
+            
         if row_idx % 2 != 0:
             data_column.reverse()
-
+            
         return data_column
 
+    # The main loop now prepares the correct starting point for each row
     ray_tasks = []
+    # Use a mutable copy for calculating row start points
     current_sp = copy.deepcopy(start_point)
 
     for i in range(int(steps)):
-        # Calculate the starting point for this specific row's traversal
-        row_start_point = copy.deepcopy(current_sp)
-        ray_tasks.append(eval_row.remote(row_start_point, dir_one, dir_two, steps, metric, copy.deepcopy(model_wrapper), i))
-        # Advance the sequential start point to prepare for the next row
+        # Launch a Ray task for the current row's starting point
+        # Pass the original model_wrapper; the worker will deepcopy it.
+        ray_tasks.append(eval_row.remote(copy.deepcopy(current_sp), dir_one, dir_two, steps, metric, model_wrapper, i))
+        # Move the reference point for the next row's starting point
         current_sp.add_(dir_one)
-
+        
     # collect results and assemble matrix (rows as returned)
     try:
         results = ray.get(ray_tasks)
