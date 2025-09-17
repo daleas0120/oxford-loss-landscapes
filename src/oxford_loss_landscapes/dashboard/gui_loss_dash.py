@@ -58,17 +58,13 @@ npy_files_sorted = sorted(
     ),
     reverse=True 
 )
-landscape = np.load(os.path.join(results_dir, npy_files_sorted[0]))
-x = np.linspace(1, landscape.shape[0], landscape.shape[0])
-y = np.linspace(1, landscape.shape[1], landscape.shape[1])
-X, Y = np.meshgrid(x, y, indexing='ij')
 
+fig1 = go.Figure()
+fig2 = go.Figure()
 
-fig1 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis')])
-fig2 = go.Figure(data=[go.Surface(z=landscape, x=X, y=Y, colorscale='Viridis', showscale=False, opacity=0.9)])
 
 # Get cube points and edges
-slider_values_init = [float(x.min()), float(x.max()), float(y.min()), float(y.max()), float(np.min(landscape)), float(np.max(landscape))]
+slider_values_init = [0, 1, 0, 1, 0, 1]
 cube_points, edges = get_cube_edges_and_points(slider_values_init)
 # Add a line for each edge
 for i, j in edges:
@@ -83,31 +79,16 @@ for i, j in edges:
     ))
 
 
-
-
-layout = dict(
-    scene = dict(
-        camera = dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.55, y=1.55, z=1.25)
-        ),
-        aspectmode='manual',
-        aspectratio=dict(x=1, y=1, z=1)
-    ),
-    margin=dict(l=5, r=5, b=10, t=20),
-)
-
-fig1.update_layout(**layout)
-fig2.update_layout(**layout)
-fig2.update_layout(uirevision='static', dragmode=False)
-
-
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
-    dcc.Store(id='slider-min-store', data={'x_min': float(np.min(x)), 'y_min': float(np.min(y)), 'z_min': float(np.min(landscape))}),
-    dcc.Store(id='slider-step-store', data={'x_step': x[1] - x[0], 'y_step': y[1] - y[0]}),
+    #dcc.Store(id='slider-min-store', data={'x_min': float(np.min(x)), 'y_min': float(np.min(y)), 'z_min': float(np.min(landscape))}),
+    #dcc.Store(id='slider-step-store', data={'x_step': x[1] - x[0], 'y_step': y[1] - y[0]}),
+    dcc.Store(id='x_data'),
+    dcc.Store(id='y_data'),
+    dcc.Store(id='landscape_data'),
+    dcc.Store(id='slider-min-store'),
+    dcc.Store(id='slider-step-store'),
     html.H2("3D Loss Landscape Dashboard (Dash)"),
     html.Div([
         html.Div([
@@ -115,17 +96,17 @@ app.layout = html.Div([
             dcc.Dropdown(id='landscape-dropdown',options=[{'label': fname, 'value': fname} for fname in npy_files_sorted],
             value=npy_files_sorted[0],clearable=False,style={'marginBottom': '20px'}),
             html.Label(" Direction 1 min"),
-            dcc.Slider(id='slider-x-min', min=float(x.min()), max=float(x.max()), value=float(x.min()), step=x[1] - x[0], marks=None),
+            dcc.Slider(id='slider-x-min', min=0, max=1, value=0, step=0.01, marks=None),
             html.Label("Direction 1 max"),
-            dcc.Slider(id='slider-x-max', min=float(x.min()), max=float(x.max()), value=float(x.max()), step=x[1] - x[0], marks=None),
+            dcc.Slider(id='slider-x-max', min=0, max=1, value=1, step=0.01, marks=None),
             html.Label("Direction 2 min"),
-            dcc.Slider(id='slider-y-min', min=float(y.min()), max=float(y.max()), value=float(y.min()), step=y[1] - y[0], marks=None),
+            dcc.Slider(id='slider-y-min', min=0, max=1, value=0, step=0.01, marks=None),
             html.Label("Direction 2 max"),
-            dcc.Slider(id='slider-y-max', min=float(y.min()), max=float(y.max()), value=float(y.max()), step=y[1] - y[0], marks=None),
+            dcc.Slider(id='slider-y-max', min=0, max=1, value=1, step=0.01, marks=None),
             html.Label("Loss min"),
-            dcc.Slider(id='slider-z-min', min=float(np.min(landscape)), max=float(np.max(landscape)), value=float(np.min(landscape)), step=0.01, marks=None),
+            dcc.Slider(id='slider-z-min', min=0, max=1, value=0, step=0.01, marks=None),
             html.Label("Loss max"),
-            dcc.Slider(id='slider-z-max', min=float(np.min(landscape)), max=float(np.max(landscape)), value=float(np.max(landscape)), step=0.01, marks=None),
+            dcc.Slider(id='slider-z-max', min=0, max=1, value=1, step=0.01, marks=None),
 
         ], style={'width': '25%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '20px'}),
         html.Div([
@@ -149,6 +130,21 @@ app.layout = html.Div([
     ]) 
 ])
 
+# Callback for loading landscape data
+@app.callback(
+    [Output('x_data', 'data'),
+     Output('y_data', 'data'),
+     Output('landscape_data', 'data')],
+    [Input('landscape-dropdown', 'value')]
+)
+
+def update_summary(landscape_file):
+    landscape = np.load(os.path.join(results_dir, landscape_file))
+    x = np.linspace(1, landscape.shape[0], landscape.shape[0])
+    y = np.linspace(1, landscape.shape[1], landscape.shape[1])
+
+    return x, y, landscape
+    
 
 # Callback for figures and camera display
 @app.callback(
@@ -160,14 +156,65 @@ app.layout = html.Div([
      Input('slider-y-max', 'value'),
      Input('slider-z-min', 'value'),
      Input('slider-z-max', 'value'),
-     Input('surface-plot1', 'relayoutData')]
+     Input('surface-plot1', 'relayoutData'),
+     Input('x_data', 'data'),
+     Input('y_data', 'data'),
+     Input('landscape_data', 'data'),
+     State('surface-plot1', 'figure'),
+     State('surface-plot2', 'figure')]
 )
-def update_figures(x_min, x_max, y_min, y_max, z_min, z_max, camera_eye):
-    if camera_eye is None:
-        return dash.no_update, dash.no_update
+def update_figures(x_min, x_max, y_min, y_max, z_min, z_max, camera_eye, x_data, y_data, landscape_data, fig1_prev, fig2_prev):
+    
+    if callback_context.triggered[0]['prop_id'] == 'x_data.data' or callback_context.triggered[0]['prop_id'] == 'y_data.data' or callback_context.triggered[0]['prop_id'] == 'landscape_data.data':
+        X, Y = np.meshgrid(x_data, y_data, indexing='ij')
+        fig1 = go.Figure(data=[go.Surface(z=landscape_data, x=X, y=Y, colorscale='Viridis')])
+        fig2 = go.Figure(data=[go.Surface(z=landscape_data, x=X, y=Y, colorscale='Viridis', showscale=False, opacity=0.9)])
+        layout = dict(
+            scene = dict(
+                    camera = dict(
+                    up=dict(x=0, y=0, z=1),
+                    center=dict(x=0, y=0, z=0),
+                    eye=dict(x=1.55, y=1.55, z=1.25)
+                    ),
+            aspectmode='manual',
+            aspectratio=dict(x=1, y=1, z=1)
+            ),
+        margin=dict(l=5, r=5, b=10, t=20),
+        )
+
+        fig1.update_layout(**layout)
+        fig2.update_layout(**layout)
+        fig2.update_layout(uirevision='static', dragmode=False)
+
+        # Create figure 2 focues cube
+        # Get cube points and edges
+        X_range = np.max(x_data) - np.min(x_data)
+        Y_range = np.max(y_data) - np.min(y_data)
+        landscape_range = np.max(landscape_data) - np.min(landscape_data)
+        slider_values = [x_data[0]+ (x_min*X_range), 
+                         x_data[0]+ (x_max*X_range), 
+                         y_data[0]+ (y_min*Y_range),
+                         y_data[0]+ (y_max*Y_range),
+                         np.min(landscape_data) + (z_min*landscape_range),
+                         np.min(landscape_data) + (z_max*landscape_range)]
+        cube_points, edges = get_cube_edges_and_points(slider_values)
+        # Add a line for each edge
+        for i, j in edges:
+            fig2.add_trace(go.Scatter3d(
+             x=[cube_points[i][0], cube_points[j][0]],
+             y=[cube_points[i][1], cube_points[j][1]],
+             z=[cube_points[i][2], cube_points[j][2]],
+             mode='lines',
+             line=dict(color='black', width=4),
+            showlegend=False,
+             name='Cube Edge'
+         ))         
+        return fig1, fig2
     
     if 'surface-plot1.relayoutData' in callback_context.triggered[0]['prop_id'] and 'scene.camera' in camera_eye:
         # Update layout with new camera
+        fig1 = go.Figure(fig1_prev)
+        fig2 = go.Figure(fig2_prev)
         fig1.layout.scene.camera = camera_eye['scene.camera']
         fig2.layout.scene.camera = camera_eye['scene.camera']
         return fig1, fig2
@@ -215,11 +262,15 @@ def update_figures(x_min, x_max, y_min, y_max, z_min, z_max, camera_eye):
 )
 
 def update_summary(xmin_val, xmax_val, ymin_val, ymax_val, zmin_val, zmax_val, slider_min_data, slider_step_data):
-
+    
+    if callback_context.triggered[0]['prop_id'] == '.':
+        # Initial app load, do nothing
+        return dash.no_update
+    
     slider_value_data = [xmin_val, xmax_val, ymin_val, ymax_val, zmin_val, zmax_val]
     summary_text = get_landscape_summary(slider_value_data, slider_min_data, slider_step_data)
     
     return [f"```\n{summary_text}\n```"]
 
 if __name__ == "__main__":
-    app.run_server(port=8093, debug=True)
+    app.run_server(port=8094, debug=True)
