@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import trange
 
 from .model_interface.model_wrapper import ModelWrapper, wrap_model
-from .model_interface.model_parameters import rand_u_like, orthogonal_to
+from .model_interface.model_parameters import rand_n_like, orthogonal_to
 from .metrics.metric import Metric
 
 
@@ -22,9 +22,8 @@ def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper)
     # along dir_one and each row signifies one step along dir_two. The implementation is again
     # a little convoluted to avoid constructive operations. Fundamentally we generate the matrix
     # [[start_point + (dir_one * i) + (dir_two * j) for j in range(steps)] for i in range(steps].
-    
-    for i in range(steps):
-    # for i in trange(steps, desc='Calculating Surface...'):
+
+    for i in trange(steps, desc='Calculating Surface...'):
         data_column = []
 
         for _ in range(steps):
@@ -102,8 +101,12 @@ def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     end_model_wrapper = wrap_model(copy.deepcopy(model_end) if deepcopy_model else model_end)
 
     start_point = model_start_wrapper.get_module_parameters()
-    end_point = distance*end_model_wrapper.get_module_parameters()
-    direction = (end_point - start_point) / steps
+    # end_point = distance*end_model_wrapper.get_module_parameters()
+    direction = distance*end_model_wrapper.get_module_parameters()
+
+    direction.mul_(steps / 2)
+    start_point.sub_(direction)
+    direction.truediv_(steps / 2)
 
     data_values = []
     for _ in trange(steps, desc='Calculating...'):
@@ -159,7 +162,7 @@ def random_line(model_start: typing.Union[torch.nn.Module, ModelWrapper], metric
     # obtain start point in parameter space and random direction
     # random direction is randomly sampled, then normalized, and finally scaled by distance/steps
     start_point = model_start_wrapper.get_module_parameters()
-    direction = rand_u_like(start_point)
+    direction = rand_n_like(start_point)
 
     if normalization == 'model':
         direction.model_normalize_(start_point)
@@ -172,7 +175,9 @@ def random_line(model_start: typing.Union[torch.nn.Module, ModelWrapper], metric
     else:
         raise AttributeError('Unsupported normalization argument. Supported values are model, layer, and filter')
 
-    direction.mul_(((start_point.model_norm() * distance) / steps) / direction.model_norm())
+    # direction.mul_(((start_point.model_norm() * distance) / steps) / direction.model_norm())
+    start_point.sub_(direction)
+    direction.truediv_(steps / 2)
 
     data_values = []
     for _ in trange(steps, desc='Calculating...'):
@@ -251,8 +256,6 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
 
 
-
-
 def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric, distance=1, steps=20,
                  normalization='filter', deepcopy_model=False) -> np.ndarray:
     """
@@ -296,7 +299,7 @@ def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Met
     model_start_wrapper = wrap_model(copy.deepcopy(model) if deepcopy_model else model)
 
     start_point = model_start_wrapper.get_module_parameters()
-    dir_one = rand_u_like(start_point)
+    dir_one = rand_n_like(start_point)
     dir_two = orthogonal_to(dir_one)
 
     if normalization == 'model':
