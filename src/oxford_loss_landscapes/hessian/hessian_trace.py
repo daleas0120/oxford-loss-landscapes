@@ -15,6 +15,8 @@ def hessian_trace(model, loss_fn, inputs, targets, num_random_vectors=10):
         Estimated Hessian trace (float)
     """
     device = next(model.parameters()).device
+    inputs = inputs.to(device)
+    targets = targets.to(device)
     model.zero_grad()
     outputs = model(inputs)
     loss = loss_fn(outputs, targets)
@@ -34,5 +36,3 @@ def hessian_trace(model, loss_fn, inputs, targets, num_random_vectors=10):
         trace_estimate += sum((hvp_elem * v_elem).sum().item() for hvp_elem, v_elem in zip(hvp, v))
 
     return trace_estimate / num_random_vectors
-
-    

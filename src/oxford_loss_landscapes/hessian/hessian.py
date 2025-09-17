@@ -79,6 +79,10 @@ def eval_hess_vec_prod(vec, params, net, loss_func, inputs, outputs, use_cuda=Fa
         net.cuda()
         vec = [v.cuda() for v in vec]
 
+    device = next(net.parameters()).device
+    inputs = inputs.to(device)
+    outputs = outputs.to(device)
+
     net.eval()
     net.zero_grad() # clears grad for every parameter in the net
     
