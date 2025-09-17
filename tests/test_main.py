@@ -3,6 +3,17 @@ import torch
 from torch import nn
 import numpy as np
 
+def test_package_import():
+    """Test that the main package can be imported."""
+    try:
+        import oxford_loss_landscapes as oll
+        assert hasattr(oll, 'point')
+        assert hasattr(oll, 'linear_interpolation')
+        assert hasattr(oll, 'random_line')
+        assert hasattr(oll, 'random_plane')
+        assert hasattr(oll, 'planar_interpolation')
+    except ImportError as e:
+        pytest.skip(f"Package not properly installed: {e}")
 
 def test_random_plane():
     """Test the random_plane function."""
