@@ -15,7 +15,7 @@ from .model_interface.model_parameters import rand_n_like, orthogonal_to
 from .metrics.metric import Metric
 
 
-def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper, distance, export):
+def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper, distance=1.0, export=False):
     """
     Helper function to evaluate a planar region in parameter space.
     This avoids code duplication between planar_interpolation and random_plane.
