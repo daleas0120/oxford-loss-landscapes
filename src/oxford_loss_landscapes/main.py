@@ -164,7 +164,7 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
         
     # collect results and assemble matrix (rows as returned)
     try:
-        print("Warning: Current parallel evaluation is incorrect.")
+        print("Warning: Parallel evaluation may produce incorrect results due to known issues with parameter copying and model state. It is recommended to use sequential evaluation for reliable results. For more information, see the documentation or report issues at https://github.com/oxford-loss-landscapes/issues.")
         results = ray.get(ray_tasks)
     except Exception:
         # if remote execution fails for any reason, fallback to sequential
