@@ -627,7 +627,10 @@ def main():
     N_values = make_N_values(args.nmin, args.nmax, args.points)
     results = []
     
-    for N in N_values:
+    if os.path.exists(args.out_csv):
+        os.remove(args.out_csv)
+    
+    for idx, N in enumerate(N_values):
         result = run_single_experiment(
             N=N,
             config=config,
@@ -637,11 +640,13 @@ def main():
         
         result_for_csv = {k: v for k, v in result.items() if not k.endswith("_convergence")}
         results.append(result_for_csv)
+        
+        df_row = pd.DataFrame([result_for_csv])
+        write_mode = 'w' if idx == 0 else 'a'
+        df_row.to_csv(args.out_csv, mode=write_mode, header=write_mode == 'w', index=False)
     
     df = pd.DataFrame(results)
-    df.to_csv(args.out_csv, index=False)
     print(f"\nResults saved to: {args.out_csv}")
-    
     plot_results(df, args.out_plots, args.run_oja)
     
     # Summary
