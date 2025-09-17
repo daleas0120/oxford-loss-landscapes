@@ -163,7 +163,7 @@ def test_serial_and_parallel_plane_equal_and_timing2():
     print(serial_res)
     print(parallel_res)
 
-     # Both should be numpy arrays with same shape and values
+    # Both should be numpy arrays with same shape and values
     serial_arr = np.asarray(serial_res)
     parallel_arr = np.asarray(parallel_res)
     assert serial_arr.shape == parallel_arr.shape

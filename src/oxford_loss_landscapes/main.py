@@ -122,23 +122,33 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
     @ray.remote
     def eval_row(sp, dir_one_, dir_two_, steps_, metric_, wrapper_, row_idx):
         data_column = []
-        for j in range(steps_):
-            if j % 2 == 0:
+        if row_idx % 2 != 0:
+            sp.add_(dir_two_ * steps_)
+        for _ in range(steps_):
+            if row_idx % 2 == 0:
                 sp.add_(dir_two_)
-                data_column.append(metric_(wrapper_))
             else:
                 sp.sub_(dir_two_)
-                data_column.insert(0, metric_(wrapper_))
-        sp.add_(dir_one_)
+            data_column.append(metric_(wrapper_, sp))
+        
+        if row_idx % 2 != 0:
+            data_column.reverse()
 
         return data_column
 
-    columns = [eval_row.remote(copy.deepcopy(start_point), dir_one, dir_two, steps, metric, copy.deepcopy(model_wrapper), i)
-               for i in range(int(steps))]
+    ray_tasks = []
+    current_sp = copy.deepcopy(start_point)
+
+    for i in range(int(steps)):
+        # Calculate the starting point for this specific row's traversal
+        row_start_point = copy.deepcopy(current_sp)
+        ray_tasks.append(eval_row.remote(row_start_point, dir_one, dir_two, steps, metric, copy.deepcopy(model_wrapper), i))
+        # Advance the sequential start point to prepare for the next row
+        current_sp.add_(dir_one)
 
     # collect results and assemble matrix (rows as returned)
     try:
-        results = ray.get(columns)
+        results = ray.get(ray_tasks)
     except Exception:
         # if remote execution fails for any reason, fallback to sequential
         print("Warning: Ray remote execution failed, falling back to sequential evaluation.")
