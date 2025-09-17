@@ -73,7 +73,7 @@ advanced = [
     "scikit-learn>=1.0.0",
     "torchvision>=0.13.0",
 ]
-pytorch_models = [
+examples = [
     "torchvision",
     "datasets"
 ]
