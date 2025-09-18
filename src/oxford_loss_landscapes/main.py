@@ -48,7 +48,7 @@ def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper,
     else:
         return np.array(data_matrix)
 
-def _export_plane_to_npy(data_matrix,distance):
+def _export_plane_to_npy(data_matrix, distance):
     """
     Exports the data_matrix as a .npy binary file in a folder called 'results' in the current working directory.
     """
