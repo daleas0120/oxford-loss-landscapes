@@ -212,7 +212,8 @@ def load_landscape_data(landscape_file):
         landscape = np.load(os.path.join(results_dir, landscape_file))
         base = os.path.splitext(landscape_file)[0]
         toml_file = f"{base}.toml"
-        config = tomllib.load(open(os.path.join(results_dir, toml_file), "rb"))
+        with open(os.path.join(results_dir, toml_file), "rb") as f:
+            config = tomllib.load(f)
         x = np.linspace(0, float(config['distance']), landscape.shape[0])
         y = np.linspace(0, float(config['distance']), landscape.shape[1])
         slider_min = {
