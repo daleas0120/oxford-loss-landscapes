@@ -117,7 +117,7 @@ app.layout = html.Div([
     html.H2("Loss Landscape Viewer"),
     html.Div([
         html.Div([
-            html.Label("Select landscape file"),
+            html.Label("Select landscape file",style={'fontWeight': 'bold'}),
             dcc.Dropdown(
                 id='landscape-dropdown',
                 options=[{'label': fname, 'value': fname} for fname in npy_files_sorted],
@@ -125,27 +125,30 @@ app.layout = html.Div([
                 clearable=False,
                 style={'marginBottom': '20px'}
             ),
-            html.Label(" Direction 1 min"),
+            html.Label("Set landscape bounds",style={'fontWeight': 'bold'}),
+            html.Br(),
+            html.Br(),
+            html.Label(" Direction 1 (min.)"),
             dcc.Slider(
                 id='slider-x-min', min=0, max=1, value=0, step=0.01, marks=None, disabled=True
             ),
-            html.Label("Direction 1 max"),
+            html.Label("Direction 1 (max.)"),
             dcc.Slider(
                 id='slider-x-max', min=0, max=1, value=1, step=0.01, marks=None, disabled=True
             ),
-            html.Label("Direction 2 min"),
+            html.Label("Direction 2 (min.)"),
             dcc.Slider(
                 id='slider-y-min', min=0, max=1, value=0, step=0.01, marks=None, disabled=True
             ),
-            html.Label("Direction 2 max"),
+            html.Label("Direction 2 (max.)"),
             dcc.Slider(
                 id='slider-y-max', min=0, max=1, value=1, step=0.01, marks=None, disabled=True
             ),
-            html.Label("Loss min"),
+            html.Label("Loss (min.)"),
             dcc.Slider(
                 id='slider-z-min', min=0, max=1, value=0, step=0.01, marks=None, disabled=True
             ),
-            html.Label("Loss max"),
+            html.Label("Loss (max.)"),
             dcc.Slider(
                 id='slider-z-max', min=0, max=1, value=1, step=0.01, marks=None, disabled=True
             ),
@@ -160,6 +163,7 @@ app.layout = html.Div([
         ),
         html.Div([
             html.Div([
+                html.Label("Unbounded view (static)",style={'fontWeight': 'bold'}),
                 dcc.Graph(
                     id='surface-plot2', style={'height': '400px', 'width': '100%'}, 
                     config={"displayModeBar": True}
@@ -176,6 +180,7 @@ app.layout = html.Div([
                 })  
             ], style={'width': '39%', 'display': 'inline-block', 'verticalAlign': 'top'}),
             html.Div([
+                html.Label("Bounded view (interactive)",style={'fontWeight': 'bold'}),
                 dcc.Graph(
                     id='surface-plot1', style={'height': '600px', 'width': '100%'}, 
                     config={"displayModeBar": True}
@@ -254,6 +259,47 @@ def enable_all_sliders(landscape_data):
     return [False, False, False, False, False, False]
 
 
+# Prevent slider min from exceeding slider max
+@app.callback(
+    [Output('slider-x-min', 'value'),
+     Output('slider-x-max', 'value'),
+     Output('slider-y-min', 'value'),
+     Output('slider-y-max', 'value'),
+     Output('slider-z-min', 'value'),
+     Output('slider-z-max', 'value')],
+    [Input('slider-x-min', 'value'),
+     Input('slider-x-max', 'value'),
+     Input('slider-y-min', 'value'),
+     Input('slider-y-max', 'value'),
+     Input('slider-z-min', 'value'),
+     Input('slider-z-max', 'value'),
+     State('slider-step-store', 'data')]
+)
+def slider_autoadjust(
+    x_min, x_max, y_min, y_max, z_min, z_max, slider_step_data
+):  
+    # Prevent slider min from exceeding slider max
+    if callback_context.triggered[0]['prop_id'] == '.':
+        # Initial app load, do nothing
+        return dash.no_update
+
+    if x_min >= x_max:
+        if x_max == 0:
+            x_max = float(slider_step_data['x_step'])
+        x_min = x_max - float(slider_step_data['x_step'])
+    if y_min >= y_max:
+        if y_max == 0:
+            y_max = float(slider_step_data['y_step'])
+        y_min = y_max - float(slider_step_data['y_step'])
+    if z_min >= z_max:
+        if z_max == 0:
+            z_max = 0.01
+        z_min = z_max - 0.01
+        
+    return x_min, x_max, y_min, y_max, z_min, z_max
+    
+
+
 # Callback for figures and camera display
 @app.callback(
     [Output('surface-plot1', 'figure'),
@@ -296,7 +342,7 @@ def update_figures(
                 camera=dict(
                     up=dict(x=0, y=0, z=1),
                     center=dict(x=0, y=0, z=0),
-                    eye=dict(x=1.55, y=1.55, z=1.25)
+                    eye=dict(x=1.6, y=1.6, z=1.3)
                 ),
                 aspectmode='manual',
                 aspectratio=dict(x=1, y=1, z=1)
