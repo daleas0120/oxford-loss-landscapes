@@ -339,7 +339,7 @@ def update_figures(
         )
         fig1.update_layout(**layout)
 
-        # Update figure 2 focues cube
+        # Update figure 2 focus cube
         # Get cube points and edges
         cube_points, edges = get_cube_edges_and_points(slider_values)
         # Add a line for each edge
