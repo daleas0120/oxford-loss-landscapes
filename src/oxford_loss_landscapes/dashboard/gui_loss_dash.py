@@ -61,13 +61,22 @@ def get_landscape_summary(slider_value_data, slider_step_data, landscape_data):
     Returns text summary of loss landscape from current selection.
     """
     landscape = np.array(landscape_data)
+    landscape_min = np.min(landscape)
+    landscape_max = np.max(landscape)
+    landscape_range = landscape_max - landscape_min
     row_min = int((slider_value_data[0] - 0) / slider_step_data['x_step'])
     row_max = int((slider_value_data[1] - 0) / slider_step_data['x_step'])
     col_min = int((slider_value_data[2] - 0) / slider_step_data['y_step'])
     col_max = int((slider_value_data[3] - 0) / slider_step_data['y_step'])
     min_val = np.min(landscape[row_min:row_max, col_min:col_max])
     max_val = np.max(landscape[row_min:row_max, col_min:col_max])
-    
+
+    if min_val < landscape_min+(slider_value_data[4]*landscape_range):
+        min_val = landscape_min+(slider_value_data[4]*landscape_range)
+
+    if max_val > landscape_min+(slider_value_data[5]*landscape_range):
+        max_val = landscape_min+(slider_value_data[5]*landscape_range)
+
     lol_summary_txt = (
         f"Minimum Loss: {min_val:.4f}\n"
         f"Maximum Loss: {max_val:.4f}"
