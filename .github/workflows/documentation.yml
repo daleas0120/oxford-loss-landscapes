@@ -20,12 +20,12 @@ jobs:
           pip install sphinx sphinx_rtd_theme myst_parser furo
       - name: Sphinx build
         run: |
-          sphinx-build -b html docs/source docs/source/_build/html
+          sphinx-build -b html docs/source docs/build/html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/peb_iss9' }}
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/source/_build/html
+          publish_dir: docs/build/html
           force_orphan: true
