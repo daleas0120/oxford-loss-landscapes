@@ -351,7 +351,7 @@ def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Met
     dir_one.truediv_(steps / 2)
     dir_two.truediv_(steps / 2)
 
-    return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper,distance,export)
+    return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper, distance, export)
 
 
 # todo add hypersphere function
