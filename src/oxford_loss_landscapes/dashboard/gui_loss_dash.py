@@ -79,7 +79,10 @@ def get_landscape_summary(slider_value_data, slider_step_data, landscape_data):
 results_dir = os.path.join(os.getcwd(), "results")
 if os.path.exists(results_dir):
     npy_files = [f for f in os.listdir(results_dir) if f.endswith('.npy')]
+    if npy_files == []:
+        print("No .npy files found in /results directory.")
 else:
+    print("/results directory not found.")
     npy_files = []
 npy_files_sorted = sorted(
     npy_files,
@@ -109,33 +112,33 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='landscape-dropdown',
                 options=[{'label': fname, 'value': fname} for fname in npy_files_sorted],
-                value=npy_files_sorted[0],
+                value=npy_files_sorted[0] if npy_files_sorted else None,
                 clearable=False,
                 style={'marginBottom': '20px'}
             ),
             html.Label(" Direction 1 min"),
             dcc.Slider(
-                id='slider-x-min', min=0, max=1, value=0, step=0.01, marks=None
+                id='slider-x-min', min=0, max=1, value=0, step=0.01, marks=None, disabled=True
             ),
             html.Label("Direction 1 max"),
             dcc.Slider(
-                id='slider-x-max', min=0, max=1, value=1, step=0.01, marks=None
+                id='slider-x-max', min=0, max=1, value=1, step=0.01, marks=None, disabled=True
             ),
             html.Label("Direction 2 min"),
             dcc.Slider(
-                id='slider-y-min', min=0, max=1, value=0, step=0.01, marks=None
+                id='slider-y-min', min=0, max=1, value=0, step=0.01, marks=None, disabled=True
             ),
             html.Label("Direction 2 max"),
             dcc.Slider(
-                id='slider-y-max', min=0, max=1, value=1, step=0.01, marks=None
+                id='slider-y-max', min=0, max=1, value=1, step=0.01, marks=None, disabled=True
             ),
             html.Label("Loss min"),
             dcc.Slider(
-                id='slider-z-min', min=0, max=1, value=0, step=0.01, marks=None
+                id='slider-z-min', min=0, max=1, value=0, step=0.01, marks=None, disabled=True
             ),
             html.Label("Loss max"),
             dcc.Slider(
-                id='slider-z-max', min=0, max=1, value=1, step=0.01, marks=None
+                id='slider-z-max', min=0, max=1, value=1, step=0.01, marks=None, disabled=True
             ),
 
             ],
@@ -155,7 +158,7 @@ app.layout = html.Div([
                 html.Br(),
                 html.Div([
                     dcc.Markdown(
-                        id='landscape_summary', children="holder"
+                        id='landscape_summary', children="placeholder"
                     )
                 ], style={
                     'border': '2px solid #888', 'padding': '16px', 'margin': '16px 0', 
@@ -188,20 +191,24 @@ app.layout = html.Div([
     [Input('landscape-dropdown', 'value')]
 )
 def load_landscape_data(landscape_file):
-    landscape = np.load(os.path.join(results_dir, landscape_file))
-    base = os.path.splitext(landscape_file)[0]
-    toml_file = f"{base}.toml"
-    config = tomllib.load(open(os.path.join(results_dir, toml_file), "rb"))
-    x = np.linspace(0, float(config['distance']), landscape.shape[0])
-    y = np.linspace(0, float(config['distance']), landscape.shape[1])
-    slider_min = {
-        'x_min': float(np.min(x)),
-        'y_min': float(np.min(y)), 
-        'z_min': float(np.min(landscape))
-    }
-    slider_step = {'x_step': 1/x.shape[0], 'y_step': 1/y.shape[0]}
+    if landscape_file is None:
+        return dash.no_update
+    else:
+        # Load landscape and config
+        landscape = np.load(os.path.join(results_dir, landscape_file))
+        base = os.path.splitext(landscape_file)[0]
+        toml_file = f"{base}.toml"
+        config = tomllib.load(open(os.path.join(results_dir, toml_file), "rb"))
+        x = np.linspace(0, float(config['distance']), landscape.shape[0])
+        y = np.linspace(0, float(config['distance']), landscape.shape[1])
+        slider_min = {
+            'x_min': float(np.min(x)),
+            'y_min': float(np.min(y)), 
+            'z_min': float(np.min(landscape))
+        }
+        slider_step = {'x_step': 1/x.shape[0], 'y_step': 1/y.shape[0]}
     
-    return x, y, landscape, slider_min, slider_step, config
+        return x, y, landscape, slider_min, slider_step, config
     
 
 # Callback for updating slider steps
@@ -222,6 +229,20 @@ def update_slider_steps(slider_step_data):
         slider_step_data['y_step'],
         slider_step_data['y_step']
     )
+
+
+@app.callback(
+    [Output('slider-x-min', 'disabled'),
+     Output('slider-x-max', 'disabled'),
+     Output('slider-y-min', 'disabled'),
+     Output('slider-y-max', 'disabled'),
+     Output('slider-z-min', 'disabled'),
+     Output('slider-z-max', 'disabled')],
+    [Input('landscape_data', 'data')]
+)
+def enable_all_sliders(landscape_data):
+    # Enable all sliders when landscape_data is loaded
+    return [False, False, False, False, False, False]
 
 
 # Callback for figures and camera display
