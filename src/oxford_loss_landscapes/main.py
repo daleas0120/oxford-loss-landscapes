@@ -44,7 +44,7 @@ def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper,
         start_point.add_(dir_one)
 
     if export:
-        _export_plane_to_npy(data_matrix,distance)
+        _export_plane_to_npy(data_matrix, distance)
     else:
         return np.array(data_matrix)
 
