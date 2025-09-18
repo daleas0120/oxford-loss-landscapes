@@ -4,6 +4,7 @@ import pytest
 import torch
 from torch import nn
 import numpy as np
+import random
 
 def test_hessian_imports():
     """Test that the hessian package can be imported if available."""
@@ -107,23 +108,24 @@ def test_copy_wts_into_model():
         nn.ReLU(),
         nn.Linear(8, 1)
     )
-    original_params = [p.clone() for p in model.parameters()]
-    
-    # Create new weights with the same shape
-    new_weights = []
-    for p in model.parameters():
-        new_weights.append(torch.randn_like(p))
-    
+    original_params = np.concatenate([p.clone().detach().numpy().flatten() for p in model.parameters()])
+
+    # Store the total number of parameters in the model
+    total_params = sum(p.numel() for p in model.parameters())
+
+    new_weights = np.array([random.random() for _ in range(total_params)])
 
     new_model = copy_wts_into_model(new_weights, model)
+
+    new_model_parameters = np.concatenate([p.clone().detach().numpy().flatten() for p in new_model.parameters()])
     
     # Check that weights have been updated
-    for p, new_w in zip(new_model.parameters(), new_weights):
-        assert torch.allclose(p, new_w)
+    for p, new_w in zip(new_model_parameters, new_weights):
+        assert np.allclose(p, new_w)
     
     # Check that weights are different from original
-    for p, orig_p in zip(new_model.parameters(), original_params):
-        assert not torch.allclose(p, orig_p)
+    for p, orig_p in zip(new_model_parameters, original_params):
+        assert not np.allclose(p, orig_p)
 
 def test_weights_init():
     """Test weights initialization function."""
@@ -237,7 +239,7 @@ def test_npvec_to_tensorlist():
     flat_weights = np.concatenate([w.cpu().numpy().flatten() for w in original_weights])
     
     # Convert back to tensor list
-    tensor_list = npvec_to_tensorlist(torch.tensor(flat_weights, dtype=torch.float32), original_weights)
+    tensor_list = npvec_to_tensorlist(flat_weights, original_weights)
     
     # Check that tensor_list has the same shapes as original_weights
     assert isinstance(tensor_list, list)
@@ -377,6 +379,73 @@ def test_small_hessian():
 
 def test_hessian_vector_product():
     pass
+
+def test_get_eigenstuff():
+    try:
+        from oxford_loss_landscapes.hessian.hessian import get_eigenstuff
+    except ImportError as e:
+        pytest.skip(f"Hessian package not available; skipping related tests. Error: {e}")
+
+    A1 = np.array([[3, 0, 0], [0, 2, 0], [0, 0, 1]], dtype=np.float32)
+
+    eigval, eigvec = get_eigenstuff(A1, num_eigs_returned=3, method='numpy')
+
+    assert len(eigval) == 3
+    assert len(eigvec) == 3
+    # Check eigenvalues are approximately correct (they're floats, not integers)
+    assert np.allclose(eigval, [1.0, 2.0, 3.0])
+
+    # Use a smaller matrix size for testing (1e4 is too large and slow)
+    medium_matrix_size = int(1e2)
+    A2 = np.eye(medium_matrix_size)
+
+    # Use numpy method for smaller matrices - scipy has issues with k >= N
+    eigval, eigvec = get_eigenstuff(A2, num_eigs_returned=medium_matrix_size, method='numpy')
+    assert len(eigval) == medium_matrix_size
+    # Check that sum of eigenvalues equals the matrix size (trace of identity matrix)
+    assert abs(sum(eigval) - medium_matrix_size) < 1e-6
+
+def test_get_hessian():
+    try:
+        from oxford_loss_landscapes.hessian.hessian import get_hessian
+    except ImportError as e:
+        pytest.skip(f"Hessian package not available; skipping related tests. Error: {e}")
+    
+    # Create a simple model and data
+    model = nn.Sequential(
+        nn.Linear(2, 4),
+        nn.ReLU(),
+        nn.Linear(4, 1)
+    )
+    model.eval()
+    
+    # Count total parameters
+    n_params = sum(p.numel() for p in model.parameters())
+    
+    # Create dummy data
+    torch.manual_seed(42)
+    X = torch.randn(5, 2)
+    y = torch.randn(5, 1)
+    criterion = nn.MSELoss()
+
+    output = model(X)
+    loss = criterion(output, y)
+    
+    # Compute Hessian
+    hessian = get_hessian(model,loss)
+    
+    # Check basic properties
+    assert isinstance(hessian, np.ndarray)
+    assert hessian.shape == (n_params, n_params)
+    
+    # Check symmetry (should be symmetric since Hessian is symmetric)
+    assert np.allclose(hessian, hessian.T, rtol=1e-5)
+    
+    # Check if eigenvalues exist
+    eigenvalues = np.linalg.eigvals(hessian)
+    assert len(eigenvalues) == n_params
+
+    
 
 
 
