@@ -77,7 +77,10 @@ def get_landscape_summary(slider_value_data, slider_step_data, landscape_data):
 
 # Load data
 results_dir = os.path.join(os.getcwd(), "results")
-npy_files = [f for f in os.listdir(results_dir) if f.endswith('.npy')]
+if os.path.exists(results_dir):
+    npy_files = [f for f in os.listdir(results_dir) if f.endswith('.npy')]
+else:
+    npy_files = []
 npy_files_sorted = sorted(
     npy_files,
     key=lambda fname: (
