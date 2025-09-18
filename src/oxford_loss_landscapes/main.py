@@ -285,7 +285,7 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
 
 
 def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric, distance=1, steps=20,
-                 normalization='filter', deepcopy_model=False, export = False) -> np.ndarray:
+                 normalization='filter', deepcopy_model=False, export=False) -> np.ndarray:
     """
     Returns the computed value of the evaluation function applied to the model or agent along a planar
     subspace of the parameter space defined by a start point and two randomly sampled directions.
