@@ -25,13 +25,12 @@ def get_eigenstuff(hessian, num_eigs_returned=2, method='numpy'):
         if hessian.shape[0] > LARGE_MATRIX_SIZE:
             warnings.warn("Matrix is very large for numpy.linalg.eig. Consider using method='scipy'.")
             
-        eigenvalues, eigenvectors = LA.eig(hessian)
-        # Convert complex eigenvalues to real floats
-        eigenvalues = [float(ev.real) if np.iscomplexobj(ev) else float(ev) for ev in eigenvalues]
+        # Use eigh for symmetric Hessians to guarantee real eigenvalues/vectors
+        eigenvalues, eigenvectors = LA.eigh(hessian)
         
-        # Sort by absolute eigenvalue and take the largest
-        sorted_indices = np.argsort(np.abs(eigenvalues))[-num_eigs_returned:]
-        eigenvalues = [eigenvalues[i] for i in sorted_indices]
+        # Sort eigenvalues in ascending order and select the largest num_eigs_returned
+        sorted_indices = np.argsort(eigenvalues)[-num_eigs_returned:]
+        eigenvalues = [float(eigenvalues[i]) for i in sorted_indices]
         eigenvectors = [eigenvectors[:, i].flatten() for i in sorted_indices]
         
     elif method == 'scipy':
