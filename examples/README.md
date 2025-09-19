@@ -67,6 +67,10 @@ python examples/hessian_analysis_guide.py
 
 # Practical Hessian eigenvalue computation
 python examples/hessian_eigenvalue_analysis.py
+
+# Visualizing loss landscape from simple neural network
+# Note: to open the dashboard, open web browser to provided URL
+python dashboard/gui_loss_dash.py
 ```
 
 ## Hessian Analysis Examples
