@@ -56,6 +56,9 @@ from .metrics import *
 # Contrib modules
 from .contrib import *
 
+# Dashboard
+from .dashboard import *
+
 # Utilities
 from .download_models import download_zenodo_model, download_zenodo_zip, extract_zip
 

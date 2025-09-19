@@ -1,8 +1,20 @@
 import pytest
+import random
 import torch
 from torch import nn
 import numpy as np
 
+def test_package_import():
+    """Test that the main package can be imported."""
+    try:
+        import oxford_loss_landscapes as oll
+        assert hasattr(oll, 'point')
+        assert hasattr(oll, 'linear_interpolation')
+        assert hasattr(oll, 'random_line')
+        assert hasattr(oll, 'random_plane')
+        assert hasattr(oll, 'planar_interpolation')
+    except ImportError as e:
+        pytest.skip(f"Package not properly installed: {e}")
 
 def test_random_plane():
     """Test the random_plane function."""
@@ -52,14 +64,17 @@ def test_planar_interpolation():
     X = torch.randn(20, 3)
     y = torch.randn(20, 1)
 
+    # Calculate the total number of parameters in the model
+    num_params = sum(p.numel() for p in model.parameters())
+    
     model_wrapper = SimpleModelWrapper(model)
     criterion = nn.MSELoss()
     loss_metric = Loss(criterion, X, y)
     
     # Create two random directions
-    direction1 = [torch.randn_like(p) for p in model.parameters()]
-    direction2 = [torch.randn_like(p) for p in model.parameters()]
-    
+    direction1 = np.array([random.random() for _ in range(num_params)])
+    direction2 = np.array([random.random() for _ in range(num_params)])
+
     # Wrap directions to have the same shape as model parameters
     model_1 = SimpleModelWrapper(copy_wts_into_model(direction1, model))
     model_2 = SimpleModelWrapper(copy_wts_into_model(direction2, model))
@@ -122,13 +137,15 @@ def test_linear_interpolation():
     )
     X = torch.randn(20, 3)
     y = torch.randn(20, 1)
-
+    
+    num_params = sum(p.numel() for p in model.parameters())
+    
     model_wrapper = SimpleModelWrapper(model)
     criterion = nn.MSELoss()
     loss_metric = Loss(criterion, X, y)
     
     # Create a random direction
-    direction = [torch.randn_like(p) for p in model.parameters()]
+    direction = np.array([random.random() for _ in range(num_params)])
     
     # Wrap direction to have the same shape as model parameters
     model_1 = SimpleModelWrapper(copy_wts_into_model(direction, model))

@@ -8,18 +8,26 @@ This directory contains example scripts demonstrating how to use the Oxford Loss
 
 - `basic_usage.py` - Basic introduction to the package functionality
 - `transformer_usage.py` - Basic introduction to using the Hugging Face Transformer Wrapper
-- `README.md` - This file
+- `cnn_usage.py` - Example using a CNN model
+- `hessian_basic_usage.py` - Basic Hessian computation example
+- `hessian_usage_demo.py` - Demo of Hessian usage
 
-### Hessian Analysis  
+### Hessian Analysis
 
 - `hessian_analysis_guide.py` - Comprehensive guide to Hessian eigenvalue analysis concepts
 - `hessian_eigenvalue_analysis.py` - Practical example of computing Hessian eigenvalues and eigenvectors
 - `simple_hessian_analysis.py` - Simple demonstration of Hessian computation
+- `hessian_vector_product_example.py` - Example of Hessian-vector product computation
+
+### Loss Landscape Visualization
+
+- `hessian_cnn_loss_landscape.py` - Visualizing loss landscape for a CNN
+- `hessian_transformer_loss_landscape.py` - Visualizing loss landscape for a transformer model
+- `example_loss_landscape_bandgap_Fe_ood.csv` - Example CSV data for loss landscape visualization
 
 ### Planned Examples
 
-- Loss landscape visualization examples
-- Model comparison examples  
+- Model comparison examples
 - Advanced metrics usage examples
 
 ## Running Examples
