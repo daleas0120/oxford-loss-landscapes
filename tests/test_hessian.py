@@ -5,24 +5,24 @@ import torch
 from torch import nn
 import numpy as np
 
-def test_hessian_imports():
-    """Test that the hessian package can be imported if available."""
-    try:
-        from oxford_loss_landscapes.hessian import (
-            min_max_hessian_eigs,
-            hessian_trace,
-        )
-        assert callable(min_max_hessian_eigs)
-        assert callable(hessian_trace)
-    except ImportError:
-        pytest.skip("Hessian package not available; skipping related tests.")
+from oxford_loss_landscapes.hessian import (
+    CLASSICAL_AVAILABLE,
+    hessian_trace,
+    min_max_hessian_eigs,
+)
 
+
+def test_hessian_imports():
+    """Test that the hessian package exposes expected entry points."""
+    assert callable(hessian_trace)
+    if not CLASSICAL_AVAILABLE:
+        pytest.skip("Classical eigensolver unavailable; min_max_hessian_eigs raises ImportError.")
+    assert callable(min_max_hessian_eigs)
+
+
+@pytest.mark.skipif(not CLASSICAL_AVAILABLE, reason="Classical Hessian solver requires SciPy")
 def test_eval_hess_vec_prod():
     """Test Hessian computations on a simple model."""
-    try:
-        from oxford_loss_landscapes.hessian import min_max_hessian_eigs, hessian_trace
-    except ImportError:
-        pytest.skip("Hessian package not available; skipping related tests.")
     
     # Create a simple model and data
     model = nn.Sequential(
@@ -57,10 +57,6 @@ def test_eval_hess_vec_prod():
 
 def test_hessian_trace():
     """Test Hessian trace computation on a simple model."""
-    try:
-        from oxford_loss_landscapes.hessian.hessian_trace import hessian_trace
-    except ImportError:
-        pytest.skip("Hessian package not available; skipping related tests.")
     
     # Create a simple model and data
     model = nn.Sequential(
@@ -245,5 +241,4 @@ def test_covariance():
     assert isinstance(cov_matrix, torch.Tensor)
     assert cov_matrix.shape == (10, 10)
     assert torch.allclose(cov_matrix, torch.zeros(10, 10), atol=1e-6)
-
 

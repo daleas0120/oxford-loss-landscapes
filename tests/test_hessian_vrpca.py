@@ -16,7 +16,11 @@ except Exception:  # pragma: no cover
 @pytest.mark.skipif(not SCIPY_AVAILABLE, reason="SciPy is required for the baseline comparison")
 def test_vrpca_matches_eigsh_on_small_model():
     from oxford_loss_landscapes.hessian import min_max_hessian_eigs
-    from oxford_loss_landscapes.hessian.vrpca import VRPCAConfig, top_hessian_eigenpair_vrpca
+    from oxford_loss_landscapes.hessian.vrpca import (
+        VRPCAConfig,
+        min_hessian_eigenpair_vrpca,
+        top_hessian_eigenpair_vrpca,
+    )
 
     torch.manual_seed(7)
     model = nn.Sequential(nn.Linear(4, 6), nn.Tanh(), nn.Linear(6, 1))
@@ -25,7 +29,7 @@ def test_vrpca_matches_eigsh_on_small_model():
     inputs = torch.randn(40, 4)
     targets = torch.randn(40, 1)
 
-    baseline, *_ = min_max_hessian_eigs(
+    baseline_max, baseline_min, *_ = min_max_hessian_eigs(
         net=model,
         inputs=inputs,
         outputs=targets,
@@ -47,8 +51,33 @@ def test_vrpca_matches_eigsh_on_small_model():
 
     assert result.converged
     assert result.eigenvector.norm().item() == pytest.approx(1.0, rel=1e-3)
-    assert result.eigenvalue == pytest.approx(baseline, rel=1e-1)
+    assert result.eigenvalue == pytest.approx(baseline_max, rel=1e-1)
     assert result.hvp_equivalent_calls > 0
+
+    min_result = min_hessian_eigenpair_vrpca(
+        net=model,
+        inputs=inputs,
+        targets=targets,
+        criterion=criterion,
+        config=config,
+    )
+
+    assert min_result.eigenvalue == pytest.approx(baseline_min, rel=1e-1)
+    assert min_result.eigenvector.norm().item() == pytest.approx(1.0, rel=1e-3)
+    assert min_result.hvp_equivalent_calls > 0
+
+    dropin_max, dropin_min, *_ = min_max_hessian_eigs(
+        net=model,
+        inputs=inputs,
+        outputs=targets,
+        criterion=criterion,
+        backend="vrpca",
+        vrpca_config=config,
+        compute_min=True,
+    )
+
+    assert dropin_max == pytest.approx(baseline_max, rel=1e-1)
+    assert dropin_min == pytest.approx(baseline_min, rel=1e-1)
 
 
 @pytest.mark.skipif(not SCIPY_AVAILABLE, reason="SciPy is required for the baseline comparison")
@@ -68,10 +97,22 @@ def test_min_max_vrpca_wrapper_structure():
         targets=targets,
         criterion=criterion,
         config=config,
+        compute_min=True,
     )
 
     assert isinstance(max_eig, float)
-    assert min_eig is None
+    assert isinstance(min_eig, float)
     assert max_vec.shape == (sum(p.numel() for p in model.parameters()),)
-    assert min_vec is None
-    assert iterations >= 0
+    assert min_vec.shape == max_vec.shape
+    assert iterations > 0
+
+    max_only, none_min, *_ = min_max_hessian_eigs_vrpca(
+        net=model,
+        inputs=inputs,
+        targets=targets,
+        criterion=criterion,
+        config=config,
+    )
+
+    assert isinstance(max_only, float)
+    assert none_min is None

@@ -4,6 +4,15 @@ import numpy as np
 from torch import nn
 from torch.autograd import Variable
 from scipy.sparse.linalg import LinearOperator, eigsh
+from typing import Optional
+
+try:
+    # Optional import: available when VR-PCA is installed within this package
+    from .vrpca import VRPCAConfig, min_hessian_eigenpair_vrpca, top_hessian_eigenpair_vrpca
+except Exception:  # pragma: no cover - keep classical path usable even if VRPCA missing
+    VRPCAConfig = None  # type: ignore[assignment]
+    top_hessian_eigenpair_vrpca = None  # type: ignore[assignment]
+    min_hessian_eigenpair_vrpca = None  # type: ignore[assignment]
 
 ################################################################################
 #                              Supporting Functions
@@ -112,33 +121,95 @@ def eval_hess_vec_prod(vec, params, net, loss_func, inputs, outputs, use_cuda=Fa
 ################################################################################
 #                  For computing Eigenvalues of Hessian
 ################################################################################
-def min_max_hessian_eigs(net, inputs, outputs, criterion, rank=0, use_cuda=False, verbose=False, all_params=True):
+def min_max_hessian_eigs(
+    net,
+    inputs,
+    outputs,
+    criterion,
+    rank=0,
+    use_cuda=False,
+    verbose=False,
+    all_params=True,
+    *,
+    backend: str = "classical",
+    vrpca_config: Optional["VRPCAConfig"] = None,
+    compute_min: bool = True,
+):
     """
-        Compute the largest and the smallest eigenvalues of the Hessian marix.
+    Compute the largest and the smallest eigenvalues of the Hessian matrix.
 
-        Args:
-            net: the trained model.
-            inputs: nn inputs.
-            outputs: desired nn outputs.
-            criterion: loss function.
-            rank: rank of the working node.
-            use_cuda: use GPU
-            verbose: print more information
-            all_params: use all nn parameters
+    Args:
+        net: the trained model.
+        inputs: nn inputs.
+        outputs: desired nn outputs.
+        criterion: loss function.
+        rank: rank of the working node.
+        use_cuda: use GPU.
+        verbose: print more information.
+        all_params: use all nn parameters.
+        backend: one of {"classical", "vrpca"}. When "vrpca", both extreme
+            eigenpairs are estimated with the stochastic VR-PCA solver.
+        vrpca_config: optional VR-PCA configuration dataclass; ignored unless
+            ``backend == 'vrpca'``.
+        compute_min: when True (default), also compute the minimum eigenpair.
+            For the VR-PCA backend this uses a second run on the negated Hessian.
 
-        Returns:
-            maxeig: max eigenvalue
-            mineig: min eigenvalue
-            hess_vec_prod.count: number of iterations for calculating max and min eigenvalues
+    Returns:
+        maxeig: max eigenvalue
+        mineig: min eigenvalue (or None when ``backend == 'vrpca'`` and ``compute_min`` is False)
+        maxeigvec: dominant eigenvector (as a numpy array shaped like the flattened parameters)
+        mineigvec: minimum eigenvector (or None when omitted)
+        iters_or_cost: classical iteration count, or an HVP-equivalent cost when ``backend == 'vrpca'``
     """
-    
+
+    if backend not in {"classical", "vrpca"}:
+        raise ValueError("backend must be one of {'classical', 'vrpca'}")
+
+    # VR-PCA path: dominant eigenpair via stochastic solver with optional
+    # VR-PCA computation of the minimum eigenpair.
+    if backend == "vrpca":
+        if top_hessian_eigenpair_vrpca is None:
+            raise RuntimeError("VR-PCA backend requested but not available in this build")
+
+        result = top_hessian_eigenpair_vrpca(
+            net=net,
+            inputs=inputs,
+            targets=outputs,
+            criterion=criterion,
+            all_params=all_params,
+            use_cuda=use_cuda,
+            config=vrpca_config,
+        )
+
+        maxeig = float(result.eigenvalue)
+        maxeigvec = result.eigenvector.detach().cpu().numpy()
+        if not compute_min:
+            return maxeig, None, maxeigvec, None, float(result.hvp_equivalent_calls)
+
+        if min_hessian_eigenpair_vrpca is None:
+            raise RuntimeError("VR-PCA minimum eigenpair helper unavailable")
+
+        min_result = min_hessian_eigenpair_vrpca(
+            net=net,
+            inputs=inputs,
+            targets=outputs,
+            criterion=criterion,
+            all_params=all_params,
+            use_cuda=use_cuda,
+            config=vrpca_config,
+        )
+
+        mineig = float(min_result.eigenvalue)
+        mineigvec = min_result.eigenvector.detach().cpu().numpy()
+        total_cost = float(result.hvp_equivalent_calls + min_result.hvp_equivalent_calls)
+        return maxeig, mineig, maxeigvec, mineigvec, total_cost
+
     if all_params:
         params = [p for p in net.parameters()]
     else:
         params = [p for p in net.parameters() if len(p.size()) >= 1]
-        
+
     N = sum(p.numel() for p in params)
-    # print(N)
 
     def hess_vec_prod(vec):
         hess_vec_prod.count += 1  # simulates a static variable
@@ -146,33 +217,39 @@ def min_max_hessian_eigs(net, inputs, outputs, criterion, rank=0, use_cuda=False
         start_time = time.time()
         eval_hess_vec_prod(vec, params, net, criterion, inputs, outputs, use_cuda)
         prod_time = time.time() - start_time
-        if verbose and rank == 0: print("Iter: %d  time: %f" % (hess_vec_prod.count, prod_time))
-        return gradtensor_to_npvec(net,all_params)
-        
+        if verbose and rank == 0:
+            print("Iter: %d  time: %f" % (hess_vec_prod.count, prod_time))
+        return gradtensor_to_npvec(net, all_params)
+
     hess_vec_prod.count = 0
-    if verbose and rank == 0: print("Rank %d: computing max eigenvalue" % rank)
+    if verbose and rank == 0:
+        print("Rank %d: computing max eigenvalue" % rank)
 
     A = LinearOperator((N, N), matvec=hess_vec_prod)
-  
+
     eigvals, eigvecs = eigsh(A, k=1, which='LM', tol=1e-2)
     maxeig = eigvals[0]
     maxeigvec = eigvecs
-    if verbose and rank == 0: print('max eigenvalue = %f' % maxeig)
+    if verbose and rank == 0:
+        print('max eigenvalue = %f' % maxeig)
 
     # If the largest eigenvalue is positive, shift matrix so that any negative eigenvalue is now the largest
     # We assume the smallest eigenvalue is zero or less, and so this shift is more than what we need
-    shift = maxeig*1.0
-    def shifted_hess_vec_prod(vec):
-        return hess_vec_prod(vec) - shift*vec
+    shift = maxeig * 1.0
 
-    if verbose and rank == 0: print("Rank %d: Computing shifted eigenvalue" % rank)
+    def shifted_hess_vec_prod(vec):
+        return hess_vec_prod(vec) - shift * vec
+
+    if verbose and rank == 0:
+        print("Rank %d: Computing shifted eigenvalue" % rank)
 
     A = LinearOperator((N, N), matvec=shifted_hess_vec_prod)
     eigvals, eigvecs = eigsh(A, k=1, which='LM', tol=1e-2)
     eigvals = eigvals + shift
     mineig = eigvals[0]
     mineigvec = eigvecs
-    if verbose and rank == 0: print('min eigenvalue = ' + str(mineig))
+    if verbose and rank == 0:
+        print('min eigenvalue = ' + str(mineig))
 
     if maxeig <= 0 and mineig > 0:
         maxeig, mineig = mineig, maxeig

@@ -12,6 +12,8 @@ plots, and scaling analyses.
 - **Location**: Core implementation lives in `src/oxford_loss_landscapes/hessian/vrpca/`.
 - **Interface parity**: The public API mirrors the classical functions so examples and
   downstream code can switch between solvers with minimal edits.
+- **Dependencies**: The classical solver still depends on SciPy; VR-PCA routines remain
+  available even when SciPy is absent, allowing curvature studies on constrained installs.
 
 ## 2. Python API
 
@@ -21,6 +23,7 @@ Two primary entry points are exported from `oxford_loss_landscapes.hessian`:
 from oxford_loss_landscapes.hessian import (
     min_max_hessian_eigs,                 # classical eigsh-based solver
     top_hessian_eigenpair_vrpca,          # VR-PCA dominant eigenpair helper
+    min_hessian_eigenpair_vrpca,          # VR-PCA minimum eigenpair helper
     min_max_hessian_eigs_vrpca,           # classical-style tuple with VR-PCA max eigen
     VRPCAConfig,                          # configuration dataclass
 )
@@ -40,9 +43,11 @@ print(result.eigenvalue, result.converged, result.hvp_equivalent_calls)
 ### 2.2 Classical compatibility
 
 `min_max_hessian_eigs_vrpca` returns a tuple shaped like the legacy
-`min_max_hessian_eigs`. Minimum-eigenvalue entries are currently `None`, so older
-code that expects `(max_eig, min_eig, max_vec, min_vec, iterations)` can upgrade
-progressively.
+`min_max_hessian_eigs`. Pass `compute_min=True` to obtain both extreme eigenpairs
+with VR-PCA; the minimum entries default to `None`, so older code that expects
+`(max_eig, min_eig, max_vec, min_vec, iterations)` can upgrade progressively.
+Use `min_hessian_eigenpair_vrpca` for a direct minimum-eigenpair estimate when
+the maximum is not required.
 
 ## 3. Example scripts (`examples/`)
 
@@ -57,7 +62,6 @@ Each script injects `src/` onto `sys.path`, so running them from a source checko
 works once the correct conda environment is active:
 
 ```bash
-source /home/alok/miniconda3/bin/activate Oxford_RSC  # or: conda activate Oxford_RSC
 python examples/simple_hessian_vrpca_analysis.py
 ```
 

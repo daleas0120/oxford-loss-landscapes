@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Optional, Tuple
 
 import torch
@@ -60,6 +61,35 @@ def top_hessian_eigenpair_vrpca(
     return top_eigenpair_vrpca(oracle, config=config)
 
 
+def min_hessian_eigenpair_vrpca(
+    net: torch.nn.Module,
+    inputs,
+    targets,
+    criterion,
+    *,
+    all_params: bool = True,
+    use_cuda: bool = False,
+    config: Optional[VRPCAConfig] = None,
+) -> VRPCAResult:
+    """Compute the minimum Hessian eigenpair using VR-PCA by running on ``-H``."""
+
+    device = _resolve_device(net, use_cuda)
+    net = _move_module(net, device)
+    inputs = _ensure_tensor_device(inputs, device)
+    targets = _ensure_tensor_device(targets, device)
+
+    oracle = HessianVectorProductOracle(
+        model=net,
+        loss_fn=criterion,
+        inputs=inputs,
+        targets=targets,
+        all_params=all_params,
+        scale=-1.0,
+    )
+    result = top_eigenpair_vrpca(oracle, config=config)
+    return replace(result, eigenvalue=-result.eigenvalue)
+
+
 def min_max_hessian_eigs_vrpca(
     net: torch.nn.Module,
     inputs,
@@ -69,12 +99,13 @@ def min_max_hessian_eigs_vrpca(
     all_params: bool = True,
     use_cuda: bool = False,
     config: Optional[VRPCAConfig] = None,
-) -> Tuple[float, Optional[float], "np.ndarray", Optional[torch.Tensor], float]:
-    """Return an interface similar to ``min_max_hessian_eigs`` using VR-PCA for the top eigenpair.
+    compute_min: bool = False,
+) -> Tuple[float, Optional[float], np.ndarray, Optional[np.ndarray], float]:
+    """Return an interface similar to ``min_max_hessian_eigs`` using VR-PCA.
 
-    The minimum eigen-information is not currently provided by VR-PCA. To keep the return
-    signature compatible with the classical helper, this function returns ``None`` for the
-    minimum eigenvalue/vector and the classical iteration counter.
+    Set ``compute_min=True`` to also estimate the minimum eigenpair with VR-PCA running on the
+    negated Hessian. The returned tuple mirrors the classical helper, with the iteration counter
+    replaced by the sum of VR-PCA HVP-equivalent calls.
     """
 
     result = top_hessian_eigenpair_vrpca(
@@ -86,10 +117,28 @@ def min_max_hessian_eigs_vrpca(
         use_cuda=use_cuda,
         config=config,
     )
+    min_value: Optional[float] = None
+    min_vector: Optional[np.ndarray] = None
+    total_cost = result.hvp_equivalent_calls
+
+    if compute_min:
+        min_result = min_hessian_eigenpair_vrpca(
+            net=net,
+            inputs=inputs,
+            targets=targets,
+            criterion=criterion,
+            all_params=all_params,
+            use_cuda=use_cuda,
+            config=config,
+        )
+        min_value = min_result.eigenvalue
+        min_vector = min_result.eigenvector.detach().cpu().numpy()
+        total_cost += min_result.hvp_equivalent_calls
+
     return (
         result.eigenvalue,
-        None,
+        min_value,
         result.eigenvector.detach().cpu().numpy(),
-        None,
-        result.hvp_equivalent_calls,
+        min_vector,
+        total_cost,
     )

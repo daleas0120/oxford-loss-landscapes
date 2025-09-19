@@ -68,6 +68,7 @@ class HessianVectorProductOracle:
         targets,
         *,
         all_params: bool = True,
+        scale: float = 1.0,
     ) -> None:
         self.model = model
         self.loss_fn = loss_fn
@@ -76,6 +77,7 @@ class HessianVectorProductOracle:
         self.targets = _apply_to_device(targets, self.device)
         self.params = collect_parameters(model, all_params)
         self._spectral_norm_estimate: Optional[float] = None
+        self.scale = float(scale)
 
     @property
     def num_parameters(self) -> int:
@@ -104,6 +106,8 @@ class HessianVectorProductOracle:
 
         vector_list = [vec.to(device=self.device) for vec in vector_list]
         hvp = torch.autograd.grad(grads, self.params, grad_outputs=vector_list, retain_graph=False)
+        if self.scale != 1.0:
+            return [tensor.mul(self.scale) for tensor in hvp]
         return list(hvp)
 
     def full_hvp(self, vector_list: TensorSequence, tracker: Optional[HVPBudgetTracker] = None) -> TensorList:

@@ -17,7 +17,11 @@ if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
 from oxford_loss_landscapes.hessian import min_max_hessian_eigs
-from oxford_loss_landscapes.hessian.vrpca import VRPCAConfig, top_hessian_eigenpair_vrpca
+from oxford_loss_landscapes.hessian.vrpca import (
+    VRPCAConfig,
+    min_hessian_eigenpair_vrpca,
+    top_hessian_eigenpair_vrpca,
+)
 
 
 def build_model(input_dim: int, hidden_dim: int) -> nn.Module:
@@ -73,6 +77,22 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Eigenvalue      : {result.eigenvalue:.6f}")
     print(f"HVP equivalents : {result.hvp_equivalent_calls:.2f}")
     print(f"Converged       : {result.converged}")
+    print(f"Elapsed         : {result.elapsed_time:.3f}s")
+
+    min_result = min_hessian_eigenpair_vrpca(
+        net=model,
+        inputs=inputs,
+        targets=targets,
+        criterion=criterion,
+        config=config,
+    )
+
+    print("\nVR-PCA minimum eigenpair")
+    print("------------------------")
+    print(f"Eigenvalue      : {min_result.eigenvalue:.6f}")
+    print(f"HVP equivalents : {min_result.hvp_equivalent_calls:.2f}")
+    print(f"Converged       : {min_result.converged}")
+    print(f"Elapsed         : {min_result.elapsed_time:.3f}s")
 
     if args.compare:
         max_eig, min_eig, *_ = min_max_hessian_eigs(
@@ -89,6 +109,27 @@ def main(argv: list[str] | None = None) -> None:
         print("--------------------------")
         print(f"Max eigenvalue  : {max_eig:.6f}")
         print(f"Min eigenvalue  : {min_eig:.6f}")
+
+        dropin_max, dropin_min, _, _, dropin_cost = min_max_hessian_eigs(
+            net=model,
+            inputs=inputs,
+            outputs=targets,
+            criterion=criterion,
+            backend="vrpca",
+            vrpca_config=config,
+            compute_min=True,
+        )
+        print("\nVR-PCA drop-in backend")
+        print("----------------------")
+        print(f"Max eigenvalue  : {dropin_max:.6f}")
+        print(f"Min eigenvalue  : {dropin_min:.6f}")
+        rel = lambda est, ref: abs(est - ref) / max(abs(ref), 1e-8)
+        print(f"Rel. error (max): {rel(dropin_max, max_eig):.2%}")
+        print(f"Rel. error (min): {rel(dropin_min, min_eig):.2%}")
+        vrpca_total_cost = result.hvp_equivalent_calls + min_result.hvp_equivalent_calls
+        vrpca_total_time = result.elapsed_time + min_result.elapsed_time
+        print(f"Total HVP cost  : {vrpca_total_cost:.2f} (drop-in reported {dropin_cost:.2f})")
+        print(f"Total runtime   : {vrpca_total_time:.3f}s")
 
 
 if __name__ == "__main__":  # pragma: no cover

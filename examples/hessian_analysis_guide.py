@@ -101,6 +101,7 @@ def show_hessian_package_usage():
     print("trace = hessian_trace(model, criterion, inputs, targets, num_samples=10)")
     print("```")
     print()
+    print("Tip: pass `backend=\"vrpca\"` together with a `VRPCAConfig` to use the stochastic solver.")
     
     print("Key Parameters:")
     print("• model: Your trained PyTorch model")

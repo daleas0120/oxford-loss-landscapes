@@ -168,21 +168,40 @@ def analyze_hessian_eigenvalues(model, X, y, criterion):
             trace_estimate = None
 
         try:
-            from oxford_loss_landscapes.hessian.vrpca import VRPCAConfig, top_hessian_eigenpair_vrpca
+            from oxford_loss_landscapes.hessian.vrpca import (
+                VRPCAConfig,
+                min_hessian_eigenpair_vrpca,
+                top_hessian_eigenpair_vrpca,
+            )
 
             print(f"\nRunning VR-PCA solver...")
+            config = VRPCAConfig(batch_size=X.shape[0], epochs=8)
             vrpca_result = top_hessian_eigenpair_vrpca(
                 net=model,
                 inputs=X,
                 targets=y,
                 criterion=criterion,
-                config=VRPCAConfig(batch_size=X.shape[0], epochs=8),
+                config=config,
+            )
+            vrpca_min_result = min_hessian_eigenpair_vrpca(
+                net=model,
+                inputs=X,
+                targets=y,
+                criterion=criterion,
+                config=config,
             )
             print(
                 "VR-PCA dominant eigenvalue: {:.6f} | converged={} | hvp_equiv={:.2f}".format(
                     vrpca_result.eigenvalue,
                     vrpca_result.converged,
                     vrpca_result.hvp_equivalent_calls,
+                )
+            )
+            print(
+                "VR-PCA minimum eigenvalue : {:.6f} | converged={} | hvp_equiv={:.2f}".format(
+                    vrpca_min_result.eigenvalue,
+                    vrpca_min_result.converged,
+                    vrpca_min_result.hvp_equivalent_calls,
                 )
             )
         except ImportError:

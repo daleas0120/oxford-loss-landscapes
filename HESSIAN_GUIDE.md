@@ -87,6 +87,30 @@ print(f"Hessian trace estimate: {trace}")
 
 **Returns**: `estimated_trace` (float)
 
+### VR-PCA drop-in backend
+
+For larger models, switch the classical solver to the stochastic VR-PCA implementation
+without rewriting downstream code:
+
+```python
+from oxford_loss_landscapes.hessian import min_max_hessian_eigs
+from oxford_loss_landscapes.hessian.vrpca import VRPCAConfig
+
+config = VRPCAConfig(batch_size=128, epochs=12)
+max_eig, min_eig, max_vec, min_vec, cost = min_max_hessian_eigs(
+    net=model,
+    inputs=X,
+    outputs=y,
+    criterion=criterion,
+    backend="vrpca",
+    vrpca_config=config,
+    compute_min=True,
+)
+```
+
+`max_eig` and `min_eig` mirror the classical results, while `cost` reports the sum of
+VR-PCA Hessian-vector product equivalents consumed by both extreme eigenpair estimates.
+
 ## Interpreting Results
 
 ### Eigenvalues
