@@ -5,7 +5,7 @@ Example demonstrating how to use the refactored Hessian-vector product function.
 import torch
 import torch.nn as nn
 import numpy as np
-from oxford_loss_landscapes.hessian import create_hessian_vector_product, min_max_hessian_eigs
+from oxford_loss_landscapes.hessian.hessian import create_hessian_vector_product_from_loss, min_max_hessian_eigs
 
 def example_usage():
     """Demonstrate the refactored Hessian functionality."""
@@ -21,13 +21,15 @@ def example_usage():
     inputs = torch.randn(32, 10)
     targets = torch.randn(32, 1)
     criterion = nn.MSELoss()
+
+    loss = criterion(model(inputs), targets)
     
     print("=== Example: Using Hessian-Vector Product Function ===")
     
     # Method 1: Create and use Hessian-vector product function directly
     print("\n1. Creating Hessian-vector product function...")
-    hvp_func, params, N = create_hessian_vector_product(
-        model, inputs, targets, criterion, use_cuda=False, all_params=True
+    hvp_func, params, N = create_hessian_vector_product_from_loss(
+        model, loss, use_cuda=False, all_params=True
     )
     
     print(f"   Model has {N} parameters")
