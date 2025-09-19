@@ -58,7 +58,7 @@ def main():
         ds = load_dataset('Maysee/tiny-imagenet', split='train')
     except Exception:
         print("   Could not load 'Maysee/tiny-imagenet' dataset. Please ensure you have access to this dataset.")
-        exit(1)
+        return
     #%%
     input_img = ds[0]['image'].convert('RGB')
     input_img = preprocess(input_img)
