@@ -61,12 +61,11 @@ This includes: plotly, ipywidgets, jupyter, scikit-learn, torchvision
 
 ### Installation with requirements.txt
 
-Please check the requirements.txt file and uncomment optional packages for full functionality.
+> IMPORTANT: Please check the requirements.txt file and uncomment optional packages for full functionality.
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
-pip install -e .
 ```
 
 ### Python Version Compatibility
