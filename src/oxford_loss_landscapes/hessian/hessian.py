@@ -62,7 +62,7 @@ def get_hessian(model, loss, method='numpy'):
     n_params = sum(p.numel() for p in model.parameters())
     if n_params < SMALL_MATRIX_SIZE:
         # For small models, use direct Hessian computation
-        hessian = small_hessian(model, loss, method)
+        hessian = small_hessian(model, loss, method=method)
         return hessian
     elif n_params < LARGE_MATRIX_SIZE:
         # For medium models, use Hessian-vector product
