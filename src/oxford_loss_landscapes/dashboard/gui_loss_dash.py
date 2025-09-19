@@ -357,25 +357,6 @@ def update_figures(
         # Plot max / min / origin points on figure 2
         slider_values = [x_min, x_max, y_min, y_max, z_min, z_max]
         summary = get_landscape_summary(slider_values, slider_step_data, landscape_data, float(config_data['distance']))
-        # Add markers to your figure
-        fig1.add_trace(go.Scatter3d(
-            x=summary['min_val'], y=[min_y], z=[min_z],
-            mode='markers',
-            marker=dict(size=8, color='blue'),
-            name='Minimum'
-        ))
-        fig1.add_trace(go.Scatter3d(
-            x=[max_x], y=[max_y], z=[max_z],
-            mode='markers',
-            marker=dict(size=8, color='red'),
-            name='Maximum'
-        ))
-        fig1.add_trace(go.Scatter3d(
-            x=[origin_x], y=[origin_y], z=[origin_z],
-            mode='markers',
-            marker=dict(size=8, color='green'),
-            name='Origin'
-        ))
 
         layout = dict(
             scene=dict(
