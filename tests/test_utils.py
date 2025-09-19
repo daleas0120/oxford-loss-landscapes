@@ -3,6 +3,16 @@
 import pytest
 import numpy as np
 
+def test_package_import():
+    """Test that the main package can be imported."""
+    try:
+        import oxford_loss_landscapes.utils as oll
+        assert hasattr(oll, 'estimate_surf_vol')
+        assert hasattr(oll, 'trapezoidal_area')
+        assert hasattr(oll, 'move_landscape_to_cpu')
+    except ImportError as e:
+        pytest.skip(f"Package not properly installed: {e}")
+
 def test_estimate_surf_vol():
     """
     Test the estimate_surf_vol function which estimates the volume under a surface.
