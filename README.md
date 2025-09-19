@@ -51,9 +51,17 @@ For advanced visualization and analysis tools:
 pip install -e ".[advanced]"
 ```
 
+For example scripts:
+
+```bash
+pip install -e ".[examples]"
+```
+
 This includes: plotly, ipywidgets, jupyter, scikit-learn, torchvision
 
 ### Installation with requirements.txt
+
+Please check the requirements.txt file and uncomment optional packages for full functionality.
 
 ```bash
 pip install --upgrade pip
@@ -63,7 +71,7 @@ pip install -e .
 
 ### Python Version Compatibility
 
-- **Python 3.8-3.12**: Uses PyTorch >=1.8.0 and NumPy <2.0
+- **Python 3.10-3.12**: Uses PyTorch >=1.8.0 and NumPy <2.0
 - **Python 3.13+**: Uses PyTorch >=2.5.0 and NumPy >=2.0 (automatic version selection)
 
 ## Quick Start
@@ -86,14 +94,14 @@ inputs = torch.randn(100, 10)
 targets = torch.randn(100, 1)
 
 # Wrap the model
-model_wrapper = oll.ModelWrapper(model, criterion, inputs, targets)
+model_wrapper = oll.SimpleModelWrapper(model)
 
 # Compute a random 2D loss landscape
-landscape = oll.random_plane(model_wrapper, distance=1.0, steps=25)
+landscape = oll.random_plane(model_wrapper, metric=oll.Loss(criterion, inputs, targets), distance=1.0, steps=25)
 print(f"Loss landscape shape: {landscape.shape}")
 
 # Compute loss at current parameters
-loss_value = oll.point(model_wrapper)
+loss_value = oll.point(model_wrapper, metric=oll.Loss(criterion, inputs, targets))
 print(f"Current loss: {loss_value}")
 ```
 
@@ -103,7 +111,6 @@ print(f"Current loss: {loss_value}")
 
 - `point()`: Evaluate loss at current parameters
 - `linear_interpolation()`: Loss along a line between two points
-
 - `random_line()`: Loss along a random direction
 - `planar_interpolation()`: Loss over a 2D plane between three points  
 - `random_plane()`: Loss over a random 2D plane
@@ -112,6 +119,7 @@ print(f"Current loss: {loss_value}")
 
 - `ModelWrapper`: Interface for PyTorch models
 - `SimpleModelWrapper`: Interface for simple models
+- `TransformerModelWrapper`: Interface for Huggingface Transformer Models
 
 ### Utilities
 
@@ -179,7 +187,7 @@ If you use this library in your research, please consider citing:
 ```bibtex
 @software{oxford_loss_landscapes,
   title = {Oxford Loss Landscapes: A library for visualizing and analyzing neural network loss landscapes},
-  author = {Oxford RSE Project Contributors},
+  author = {Ashley S. Dale AND Paige E. Bowling AND Christian D. Harding AND Alok Ghosh AND Ryan Daniels},
   url = {https://github.com/daleas0120/oxford_rse_project4},
   year = {2025}
 }

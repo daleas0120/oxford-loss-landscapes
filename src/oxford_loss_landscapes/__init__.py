@@ -56,6 +56,16 @@ from .metrics import *
 # Contrib modules
 from .contrib import *
 
+# Dashboard (optional import - requires advanced dependencies)
+try:
+    import streamlit
+    import plotly
+    from .dashboard import *
+except ImportError:
+    # Dashboard dependencies (streamlit, plotly) not available
+    # Install with: pip install -e ".[advanced]"
+    pass
+
 # Utilities
 from .download_models import download_zenodo_model, download_zenodo_zip, extract_zip
 

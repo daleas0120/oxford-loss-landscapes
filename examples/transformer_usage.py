@@ -63,10 +63,10 @@ def main():
         print("5. Creating simple loss visualization...")
         try:
             # Compute a 1D loss line
-            model_path = 'transformer_loss_landscape_example.png'
             line_losses = oll.random_line(model_wrapper, loss_metric, distance=1.0, steps=25)
             
             # Plot the line
+            save_figure_name = "example_transformer_loss_landscape_1D.png"
             plt.figure(figsize=(8, 5))
             plt.plot(np.linspace(-1, 1, len(line_losses)), line_losses, 'b-', linewidth=2)
             plt.axvline(x=0, color='r', linestyle='--', alpha=0.7, label='Current parameters')
@@ -75,9 +75,9 @@ def main():
             plt.title('1D Loss Landscape (Random Direction)')
             plt.legend()
             plt.grid(True, alpha=0.3)
-            plt.savefig(model_path, dpi=150, bbox_inches='tight')
+            plt.savefig(save_figure_name, dpi=150, bbox_inches='tight')
             plt.close()
-            print(f"   Saved loss landscape plot to {model_path}")
+            print(f"   Saved loss landscape plot to {save_figure_name}")
         except Exception as e:
             print(f"   Visualization skipped: {e}")
         

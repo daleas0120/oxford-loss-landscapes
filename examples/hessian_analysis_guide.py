@@ -160,6 +160,8 @@ def demonstrate_practical_usage():
     print("• These directions help understand optimization difficulty")
 
 def main():
+    """Main function to run the Hessian analysis guide."""
+    
     print("Hessian Eigenvalue Analysis for Neural Networks")
     print("=" * 60)
     
