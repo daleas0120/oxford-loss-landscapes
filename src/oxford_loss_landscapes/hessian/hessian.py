@@ -334,12 +334,12 @@ def create_hessian_vector_product_from_loss(net, loss, use_cuda=False, all_param
         Compute Hessian-vector product using pre-computed loss.
         
         Args:
-            vec: numpy vector to multiply with Hessian
+            vec (numpy.ndarray of shape (N,)): Vector to multiply with Hessian, where N is the total number of parameters in the model.
             verbose: print timing information
             rank: rank for distributed computing
             
         Returns:
-            numpy vector representing H*vec
+            numpy.ndarray of shape (N,): Resulting vector representing H*vec
         """
         if not hasattr(hess_vec_prod, 'count'):
             hess_vec_prod.count = 0
