@@ -1,6 +1,8 @@
 # Oxford Loss Landscapes
 
-Loss Landscapes for EXplainable AI - A Python library for visualizing and analyzing neural network loss landscapes.
+Loss landscapes for explainable AI - A Python library for visualizing and analyzing neural network loss landscapes. 
+
+Developed as part of the 2025 Research Software Engineering workshop at Oxford.
 
 ## Overview
 
