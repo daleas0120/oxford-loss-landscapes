@@ -35,6 +35,7 @@ class AlgorithmConfig:
     vr_eta_fixed: float = 0.01
     vr_epochs_max: int = 20  # Maximum epochs
     vr_m_factor: float = 1.0  # REDUCED from 5.0 - m = factor * n
+    # Rationale: Empirical tests showed that a lower m_factor (1.0) provides sufficient convergence while reducing memory and computation cost compared to the previous value (5.0).
     
     # Common parameters
     batch_size: int = 32
