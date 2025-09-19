@@ -104,6 +104,14 @@ def main():
             print(f"   Saved loss landscape plot to {save_figure_name}")
         except (ValueError, RuntimeError, TypeError, plt.matplotlib.MatplotlibError) as e:
             print(f"   Visualization skipped: {e}")
+
+        # 2D visualization example
+        print("7. Creating 2D loss visualization...")
+        try:
+            # Compute a 1D loss line
+            line_losses = oll.random_plane(model_wrapper, loss_metric, distance=1.0, steps=25, export=True)
+        except (ValueError, RuntimeError, TypeError, plt.matplotlib.MatplotlibError) as e:
+            print(f"   2D visualization skipped: {e}")
         
         print("\n✓ Example completed successfully!")
     except ImportError as e:
