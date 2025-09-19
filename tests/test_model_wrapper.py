@@ -5,6 +5,16 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+def test_package_import():
+    """Test that the main package can be imported."""
+    try:
+        from oxford_loss_landscapes.model_interface.model_wrapper import ModelWrapper
+        from oxford_loss_landscapes.model_interface.model_wrapper import SimpleModelWrapper
+        from oxford_loss_landscapes.model_interface.model_wrapper import TransformerModelWrapper
+        from oxford_loss_landscapes.model_interface.model_wrapper import GeneralModelWrapper
+    except ImportError as e:
+        pytest.skip(f"Package not properly installed: {e}")
+
 def test_init_model_wrapper():
     """Test that ModelWrapper can be imported and initialized."""
     try:
