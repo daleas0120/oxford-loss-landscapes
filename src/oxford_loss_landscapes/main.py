@@ -5,6 +5,8 @@ import copy
 import typing
 import torch.nn
 import numpy as np
+import os
+import datetime
 from tqdm import trange
 import ray # for parallel processing
 import os
@@ -14,11 +16,13 @@ from .model_interface.model_wrapper import ModelWrapper, wrap_model
 from .model_interface.model_parameters import rand_n_like, orthogonal_to
 from .metrics.metric import Metric
 
+USE_PARALLEL = False
 
-def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper):
+def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper, distance=1.0, export=False):
     """
     Helper function to evaluate a planar region in parameter space.
     This avoids code duplication between planar_interpolation and random_plane.
+    Exports binary landscape output and config toml to results folder if export is True, else outputs numpy array.
     """
     data_matrix = []
     # evaluate loss in grid of (steps * steps) points, where each column signifies one step
@@ -42,137 +46,10 @@ def _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_wrapper)
         data_matrix.append(data_column)
         start_point.add_(dir_one)
 
-    return np.array(data_matrix)
-
-
-def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model_wrapper,
-                            use_ray: bool = False, ray_init_kwargs: dict = None, num_workers: int = None):
-    """
-    Parameters
-    ----------
-    start_point : tensor-like
-        Initial point in parameter space. This object will be mutated during
-        sequential evaluation, so pass a copy if you need to preserve it.
-    dir_one : tensor-like
-        Direction vector for row steps (x-axis).
-    dir_two : tensor-like
-        Direction vector for column steps (y-axis).
-    steps : int
-        Number of steps in each direction (grid will be steps x steps).
-    metric : callable
-        Function of (model_wrapper) that evaluates the loss/score at the
-        current parameters of the model.
-    model_wrapper : object
-        Wrapper object providing model parameters and any other state required
-        by `metric`.
-    use_ray : bool, default=True
-        If True, attempt to use Ray actors for parallel execution.
-        If False or Ray is unavailable, fall back to sequential evaluation.
-    ray_init_kwargs : dict, optional
-        Passed to `ray.init()` if Ray must be initialized.
-    num_workers : int, optional
-        Number of Ray workers (actors) to create. Defaults to CPU count,
-        capped by `steps`.
-
-    Returns
-    -------
-    np.ndarray
-        Array of shape (steps, steps) containing metric values for the plane.
-        Row index corresponds to dir_one steps, column index to dir_two steps.
-
-    Notes
-    -----
-    - If Ray initialization or execution fails for any reason,
-      the function silently falls back to the sequential implementation.
-    - The traversal pattern (snake-like per row) is identical to the
-      original `_evaluate_plane` for consistency.
-    """
-    # sequential fallback implementation (identical behaviour to original)
-    def _sequential_eval(sp, d1, d2, steps_, metric_, wrapper_):
-        data_matrix = []
-        for i in range(int(steps_)):
-            data_column = []
-            for _ in range(int(steps_)):
-                if i % 2 == 0:
-                    sp.add_(d2)
-                    data_column.append(metric_(wrapper_))
-                else:
-                    sp.sub_(d2)
-                    data_column.insert(0, metric_(wrapper_))
-            data_matrix.append(data_column)
-            sp.add_(d1)
+    if export:
+        _export_plane_to_npy(data_matrix, distance)
+    else:
         return np.array(data_matrix)
-
-    if not use_ray or ray is None:
-        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
-
-    # initialize ray if needed
-    if not ray.is_initialized():
-        ray.init(**(ray_init_kwargs or {}))
-
-    # choose number of workers
-    try:
-        available_cpus = int(ray.available_resources().get("CPU", os.cpu_count() or 1))
-    except Exception:
-        available_cpus = os.cpu_count() or 1
-    if num_workers is None:
-        num_workers = min(steps, max(1, available_cpus))
-
-    @ray.remote
-    def eval_row(sp_row_start, dir_one_, dir_two_, steps_, metric_, wrapper_, row_idx):
-        """
-        Evaluates a single row of the plane, accounting for snake-like traversal.
-        """
-        current_point = copy.deepcopy(sp_row_start)
-        data_column = []
-        local_wrapper = copy.deepcopy(wrapper_)
-
-        # For odd rows, shift the starting point to the far right.
-        if row_idx % 2 != 0:
-            # Create a new tensor representing the total horizontal shift
-            # by multiplying the direction vector by the number of steps.
-            total_shift = dir_two_.mul(steps_)
-            # Add this single, scaled vector to the starting point.
-            current_point.add_(total_shift)
-
-        # The rest of the logic remains the same
-        for _ in range(steps_):
-            if row_idx % 2 == 0:
-                current_point.add_(dir_two_) # Traverse right
-            else:
-                current_point.sub_(dir_two_) # Traverse left
-            
-            local_wrapper.get_module_parameters() #TODO: need to copy parameters to local_wrapper
-            data_column.append(metric_(local_wrapper))
-            
-        if row_idx % 2 != 0:
-            data_column.reverse()
-            
-        return data_column
-
-    # The main loop now prepares the correct starting point for each row
-    ray_tasks = []
-    # Use a mutable copy for calculating row start points
-    current_sp = copy.deepcopy(start_point)
-
-    for i in range(int(steps)):
-        # Launch a Ray task for the current row's starting point
-        # Pass the original model_wrapper; the worker will deepcopy it.
-        ray_tasks.append(eval_row.remote(copy.deepcopy(current_sp), dir_one, dir_two, steps, metric, model_wrapper, i))
-        # Move the reference point for the next row's starting point
-        current_sp.add_(dir_one)
-        
-    # collect results and assemble matrix (rows as returned)
-    try:
-        print("Warning: Parallel evaluation may produce incorrect results due to known issues with parameter copying and model state. It is recommended to use sequential evaluation for reliable results. For more information, see the documentation or report issues at https://github.com/oxford-loss-landscapes/issues.")
-        results = ray.get(ray_tasks)
-    except Exception:
-        # if remote execution fails for any reason, fallback to sequential
-        print("Warning: Ray remote execution failed, falling back to sequential evaluation.")
-        traceback.print_exc()
-        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
-
-    return np.array(results)
 
 
 def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) -> tuple:
@@ -196,7 +73,7 @@ def point(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric) ->
 
 def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end: typing.Union[torch.nn.Module, ModelWrapper],
-                         metric: Metric, steps=100, deepcopy_model=False, distance=1) -> np.ndarray:
+                         metric: Metric, steps=100, deepcopy_model=False, distance=1.0) -> np.ndarray:
     """
     Returns the computed value of the evaluation function applied to the model or
     agent along a linear subspace of the parameter space defined by two end points.
@@ -324,7 +201,7 @@ def random_line(model_start: typing.Union[torch.nn.Module, ModelWrapper], metric
 def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end_one: typing.Union[torch.nn.Module, ModelWrapper],
                          model_end_two: typing.Union[torch.nn.Module, ModelWrapper],
-                         metric: Metric, distance=1, steps=20, deepcopy_model=False, eigen_models = False) -> np.ndarray:
+                         metric: Metric, distance=1.0, steps=20, deepcopy_model=False, eigen_models = False) -> np.ndarray:
     """
     Returns the computed value of the evaluation function applied to the model or agent along
     a planar subspace of the parameter space defined by a start point and two end points.
@@ -374,7 +251,7 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     else:
         dir_one = distance*(model_end_one_wrapper.get_module_parameters() - start_point) / steps
         dir_two = distance*(model_end_two_wrapper.get_module_parameters() - start_point) / steps
-
+    
     # scale to match steps and total distance
     # dir_one.mul_(((start_point.model_norm() * distance) / steps) / dir_one.model_norm())
     # dir_two.mul_(((start_point.model_norm() * distance) / steps) / dir_two.model_norm())
@@ -390,7 +267,7 @@ def planar_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
 
 
 def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Metric, distance=1, steps=20,
-                 normalization='filter', deepcopy_model=False) -> np.ndarray:
+                 normalization='filter', deepcopy_model=False, export=False) -> np.ndarray:
     """
     Returns the computed value of the evaluation function applied to the model or agent along a planar
     subspace of the parameter space defined by a start point and two randomly sampled directions.
@@ -459,6 +336,162 @@ def random_plane(model: typing.Union[torch.nn.Module, ModelWrapper], metric: Met
     start_point.sub_(dir_two)
     dir_one.truediv_(steps / 2)
     dir_two.truediv_(steps / 2)
+    
+    if USE_PARALLEL:
+        return _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model_start_wrapper,
+                                   use_ray=True, ray_init_kwargs={'ignore_reinit_error': True})
+    else:
+        return _evaluate_plane(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
 
-    return _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model_start_wrapper)
+def _export_plane_to_npy(data_matrix, distance):
+    """
+    Exports the data_matrix as a .npy binary file in a folder called 'results' in the current working directory.
+    """
+    results_dir = os.path.join(os.getcwd(), "results")
+    os.makedirs(results_dir, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{timestamp}_LOLxAI"
+    
+    # Save distance to toml manually
+    toml_filename = f"{filename}.toml"
+    with open(os.path.join(results_dir, toml_filename), "w", encoding="utf-8") as f:
+        f.write(f'distance = {float(distance)}\n')
+    
+    # Save landscape data to npy
+    data_filename = f"{filename}.npy"
+    data_file_path = os.path.join(results_dir, data_filename)
+    np.save(data_file_path, data_matrix)
+
+    print(f"Saved plane data to {data_file_path}")
+
+
+
+def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model_wrapper,
+                            use_ray: bool = False, ray_init_kwargs: dict = None, num_workers: int = None):
+    """
+    Parameters
+    ----------
+    start_point : tensor-like
+        Initial point in parameter space. This object will be mutated during
+        sequential evaluation, so pass a copy if you need to preserve it.
+    dir_one : tensor-like
+        Direction vector for row steps (x-axis).
+    dir_two : tensor-like
+        Direction vector for column steps (y-axis).
+    steps : int
+        Number of steps in each direction (grid will be steps x steps).
+    metric : callable
+        Function of (model_wrapper) that evaluates the loss/score at the
+        current parameters of the model.
+    model_wrapper : object
+        Wrapper object providing model parameters and any other state required
+        by `metric`.
+    use_ray : bool, default=True
+        If True, attempt to use Ray actors for parallel execution.
+        If False or Ray is unavailable, fall back to sequential evaluation.
+    ray_init_kwargs : dict, optional
+        Passed to `ray.init()` if Ray must be initialized.
+    num_workers : int, optional
+        Number of Ray workers (actors) to create. Defaults to CPU count,
+        capped by `steps`.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (steps, steps) containing metric values for the plane.
+        Row index corresponds to dir_one steps, column index to dir_two steps.
+
+    Notes
+    -----
+    - If Ray initialization or execution fails for any reason,
+      the function silently falls back to the sequential implementation.
+    - The traversal pattern (snake-like per row) is identical to the
+      original `_evaluate_plane` for consistency.
+    """
+    # sequential fallback implementation (identical behaviour to original)
+    def _sequential_eval(sp, d1, d2, steps_, metric_, wrapper_):
+        data_matrix = []
+        for i in range(int(steps_)):
+            data_column = []
+            for _ in range(int(steps_)):
+                if i % 2 == 0:
+                    sp.add_(d2)
+                    data_column.append(metric_(wrapper_))
+                else:
+                    sp.sub_(d2)
+                    data_column.insert(0, metric_(wrapper_))
+            data_matrix.append(data_column)
+            sp.add_(d1)
+        return np.array(data_matrix)
+
+    if not use_ray or ray is None:
+        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
+
+    # initialize ray if needed
+    if not ray.is_initialized():
+        ray.init(**(ray_init_kwargs or {}))
+
+    # choose number of workers
+    try:
+        available_cpus = int(ray.available_resources().get("CPU", os.cpu_count() or 1))
+    except Exception:
+        available_cpus = os.cpu_count() or 1
+    if num_workers is None:
+        num_workers = min(steps, max(1, available_cpus))
+
+    @ray.remote
+    def eval_row(sp_row_start, dir_one_, dir_two_, steps_, metric_, wrapper_, row_idx):
+        """
+        Evaluates a single row of the plane, accounting for snake-like traversal.
+        """
+        current_point = copy.deepcopy(sp_row_start)
+        data_column = []
+        local_wrapper = copy.deepcopy(wrapper_)
+
+        # For odd rows, shift the starting point to the far right.
+        if row_idx % 2 != 0:
+            # Create a new tensor representing the total horizontal shift
+            # by multiplying the direction vector by the number of steps.
+            total_shift = dir_two_.mul_(steps_)
+            # Add this single, scaled vector to the starting point.
+            current_point.add_(total_shift)
+
+        # The rest of the logic remains the same
+        for _ in range(steps_):
+            if row_idx % 2 == 0:
+                current_point.add_(dir_two_) # Traverse right
+            else:
+                current_point.sub_(dir_two_) # Traverse left
+            
+            local_wrapper.get_module_parameters() #TODO: need to copy parameters to local_wrapper
+            data_column.append(metric_(local_wrapper))
+            
+        if row_idx % 2 != 0:
+            data_column.reverse()
+            
+        return data_column
+
+    # The main loop now prepares the correct starting point for each row
+    ray_tasks = []
+    # Use a mutable copy for calculating row start points
+    current_sp = copy.deepcopy(start_point)
+
+    for i in range(int(steps)):
+        # Launch a Ray task for the current row's starting point
+        # Pass the original model_wrapper; the worker will deepcopy it.
+        ray_tasks.append(eval_row.remote(copy.deepcopy(current_sp), dir_one, dir_two, steps, metric, model_wrapper, i))
+        # Move the reference point for the next row's starting point
+        current_sp.add_(dir_one)
+        
+    # collect results and assemble matrix (rows as returned)
+    try:
+        print("Warning: Parallel evaluation may produce incorrect results due to known issues with parameter copying and model state. It is recommended to use sequential evaluation for reliable results. For more information, see the documentation or report issues at https://github.com/oxford-loss-landscapes/issues.")
+        results = ray.get(ray_tasks)
+    except Exception:
+        # if remote execution fails for any reason, fallback to sequential
+        print("Warning: Ray remote execution failed, falling back to sequential evaluation.")
+        traceback.print_exc()
+        return _sequential_eval(start_point, dir_one, dir_two, steps, metric, model_wrapper)
+
+    return np.array(results)
 
