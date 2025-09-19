@@ -2,7 +2,32 @@
 Hessian computation utilities for loss landscape analysis.
 """
 
-from .hessian import min_max_hessian_eigs, eval_hess_vec_prod, npvec_to_tensorlist, gradtensor_to_npvec
+from .hessian import (
+    min_max_hessian_eigs,
+    eval_hess_vec_prod,
+    npvec_to_tensorlist,
+    gradtensor_to_npvec,
+    get_eigenstuff,
+    get_hessian,
+    small_hessian,
+    hessian_vector_product,
+    create_hessian_vector_product,
+    create_hessian_vector_product_from_loss,
+    get_hessian_eigenstuff
+)
 from .hessian_trace import hessian_trace
 
-__all__ = ["min_max_hessian_eigs", "eval_hess_vec_prod", "hessian_trace", "npvec_to_tensorlist", "gradtensor_to_npvec"]
+__all__ = [
+    "min_max_hessian_eigs", 
+    "eval_hess_vec_prod", 
+    "hessian_trace", 
+    "npvec_to_tensorlist", 
+    "gradtensor_to_npvec",
+    "get_eigenstuff",
+    "get_hessian",
+    "small_hessian",
+    "hessian_vector_product",
+    "create_hessian_vector_product",
+    "create_hessian_vector_product_from_loss",
+    "get_hessian_eigenstuff"
+]
