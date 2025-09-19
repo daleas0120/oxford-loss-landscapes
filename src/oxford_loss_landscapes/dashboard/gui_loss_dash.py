@@ -56,7 +56,7 @@ def convert_slider_to_data_ranges(
     return slider_values
 
 
-def get_landscape_summary(slider_value_data, slider_step_data, landscape_data):
+def get_landscape_summary(slider_value_data, slider_step_data, landscape_data, distance):
     """
     Returns text summary of loss landscape from current selection.
     """
@@ -68,18 +68,29 @@ def get_landscape_summary(slider_value_data, slider_step_data, landscape_data):
     row_max = int((slider_value_data[1] - 0) / slider_step_data['x_step'])
     col_min = int((slider_value_data[2] - 0) / slider_step_data['y_step'])
     col_max = int((slider_value_data[3] - 0) / slider_step_data['y_step'])
-    min_val = np.min(landscape[row_min:row_max, col_min:col_max])
-    max_val = np.max(landscape[row_min:row_max, col_min:col_max])
+    
+    min_val = np.min(landscape[row_min:row_max+1, col_min:col_max+1])
+    min_idx = np.argmin(landscape[row_min:row_max+1, col_min:col_max+1])
+    min_row, min_col = np.unravel_index(min_idx, landscape.shape)
+    min_dist1 = round(min_row*slider_step_data['x_step']*distance,2)
+    min_dist2 = round(min_col*slider_step_data['y_step']*distance,2)
+
+    max_val = np.max(landscape[row_min:row_max+1, col_min:col_max+1])
+    max_idx = np.argmax(landscape[row_min:row_max+1, col_min:col_max+1])
+    max_row, max_col = np.unravel_index(max_idx, landscape.shape)
+    max_dist1 = round(max_row*slider_step_data['x_step']*distance,2)
+    max_dist2 = round(max_col*slider_step_data['y_step']*distance,2)
 
     if min_val < landscape_min+(slider_value_data[4]*landscape_range):
         min_val = landscape_min+(slider_value_data[4]*landscape_range)
 
     if max_val > landscape_min+(slider_value_data[5]*landscape_range):
         max_val = landscape_min+(slider_value_data[5]*landscape_range)
+    
 
     lol_summary_txt = (
-        f"Minimum Loss: {min_val:.4f}\n"
-        f"Maximum Loss: {max_val:.4f}"
+        f"Minimum Loss: {min_val:.4f} [{min_dist1}, {min_dist2}]\n"
+        f"Maximum Loss: {max_val:.4f} [{max_dist1}, {max_dist2}]\n"
     )
     return lol_summary_txt
 
@@ -221,7 +232,7 @@ def load_landscape_data(landscape_file):
             'y_min': float(np.min(y)), 
             'z_min': float(np.min(landscape))
         }
-        slider_step = {'x_step': 1/x.shape[0], 'y_step': 1/y.shape[0]}
+        slider_step = {'x_step': 1/(x.shape[0]-1), 'y_step': 1/(y.shape[0]-1)}
     
         return x, y, landscape, slider_min, slider_step, config
     
@@ -445,15 +456,16 @@ def update_figures(
      Input('slider-step-store', 'data'),
      State('x_data', 'data'),
      State('y_data', 'data'),
-     State('landscape_data', 'data')]
+     State('landscape_data', 'data'),
+     State('config', 'data')]
 )
-def update_summary(xmin_val, xmax_val, ymin_val, ymax_val, zmin_val, zmax_val, slider_min_data, slider_step_data, x_data_val, y_data_val, landscape_data):
+def update_summary(xmin_val, xmax_val, ymin_val, ymax_val, zmin_val, zmax_val, slider_min_data, slider_step_data, x_data_val, y_data_val, landscape_data, config_data):
     if callback_context.triggered[0]['prop_id'] == '.':
         # Initial app load, do nothing
         return dash.no_update
     
     slider_values = [xmin_val, xmax_val, ymin_val, ymax_val, zmin_val, zmax_val]
-    summary_text = get_landscape_summary(slider_values, slider_step_data, landscape_data)
+    summary_text = get_landscape_summary(slider_values, slider_step_data, landscape_data, float(config_data['distance']))
     
     return [f"```\n{summary_text}\n```"]
 
