@@ -234,7 +234,6 @@ def plot_combined_scaling(df: pd.DataFrame, output_file: str = "combined_scaling
     plt.tight_layout()
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
     print(f"\nSaved improved scaling plot: {output_file}")
-    #plt.show()
     
     return eigsh_best, eigsh_all, vrpca_best, vrpca_all
 
