@@ -4,8 +4,17 @@
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
+
 import torch
 import torch.nn as nn
+
+# Allow running the example from a source checkout without installation
+_ROOT = Path(__file__).resolve().parents[1]
+_SRC = _ROOT / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 
 from oxford_loss_landscapes.hessian import min_max_hessian_eigs
 from oxford_loss_landscapes.hessian.vrpca import VRPCAConfig, top_hessian_eigenpair_vrpca
