@@ -72,14 +72,14 @@ def get_landscape_summary(slider_value_data, slider_step_data, landscape_data, d
     min_val = np.min(landscape[row_min:row_max+1, col_min:col_max+1])
     min_idx = np.argmin(landscape[row_min:row_max+1, col_min:col_max+1])
     min_row, min_col = np.unravel_index(min_idx, landscape.shape)
-    min_dist1 = round(min_row*slider_step_data['x_step']*distance,2)
-    min_dist2 = round(min_col*slider_step_data['y_step']*distance,2)
+    min_dist1 = round((min_row+row_min)*slider_step_data['x_step']*distance,2)
+    min_dist2 = round((min_col+col_min)*slider_step_data['y_step']*distance,2)
 
     max_val = np.max(landscape[row_min:row_max+1, col_min:col_max+1])
     max_idx = np.argmax(landscape[row_min:row_max+1, col_min:col_max+1])
     max_row, max_col = np.unravel_index(max_idx, landscape.shape)
-    max_dist1 = round(max_row*slider_step_data['x_step']*distance,2)
-    max_dist2 = round(max_col*slider_step_data['y_step']*distance,2)
+    max_dist1 = round((max_row+row_min)*slider_step_data['x_step']*distance,2)
+    max_dist2 = round((max_col+col_min)*slider_step_data['y_step']*distance,2)
 
     if min_val < landscape_min+(slider_value_data[4]*landscape_range):
         min_val = landscape_min+(slider_value_data[4]*landscape_range)
@@ -471,4 +471,4 @@ def update_summary(xmin_val, xmax_val, ymin_val, ymax_val, zmin_val, zmax_val, s
 
 
 if __name__ == "__main__":
-    app.run_server(port=8097, debug=True)
+    app.run(port=8097, debug=True)
