@@ -432,7 +432,7 @@ def test_get_hessian():
     loss = criterion(output, y)
     
     # Compute Hessian
-    hessian = get_hessian(model,loss)
+    hessian = get_hessian(model,loss, method='numpy')
     
     # Check basic properties
     assert isinstance(hessian, np.ndarray)

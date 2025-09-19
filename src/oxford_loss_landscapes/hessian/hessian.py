@@ -57,13 +57,13 @@ def get_eigenstuff(hessian, num_eigs_returned=2, method='numpy'):
 
     return eigenvalues, eigenvectors
 
-def get_hessian(model, loss):
+def get_hessian(model, loss, method='numpy'):
     """Function that calculates the Hessian matrix for a given model and loss value"""
 
     n_params = sum(p.numel() for p in model.parameters())
     if n_params < SMALL_MATRIX_SIZE:
         # For small models, use direct Hessian computation
-        hessian = small_hessian(model, loss)
+        hessian = small_hessian(model, loss, method)
         return hessian
     elif n_params < LARGE_MATRIX_SIZE:
         # For medium models, use Hessian-vector product
@@ -486,7 +486,6 @@ def get_hessian_eigenstuff(model, loss, num_eigs_returned=2, method='numpy', lan
     
     if landscape_type == 'minimum':
         try:
-            # hessian = small_hessian(model, loss)
             hessian = get_hessian(model, loss, method=method)
             eigenvalues, eigenvectors = get_eigenstuff(hessian, num_eigs_returned, method)
             return eigenvalues, eigenvectors
