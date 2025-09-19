@@ -202,7 +202,7 @@ def npvec_to_tensorlist(vec, params):
         numel = p.data.numel()
         result.append(torch.from_numpy(vec[loc:loc+numel]).view(p.data.shape).float())
         loc += numel
-    assert loc == vec.size, f'Vector size mismatch: got {vec.size}, expected {loc}'
+    assert loc == vec.size, f'Vector length {vec.size} does not match total parameter count {loc}'
     return result
 
 
