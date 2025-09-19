@@ -157,7 +157,28 @@ def analyze_hessian_eigenvalues(model, X, y, criterion):
         except (RuntimeError, ValueError, TypeError) as e:
             print(f"✗ Error computing trace: {e}")
             trace_estimate = None
-        
+
+        try:
+            from oxford_loss_landscapes.hessian.vrpca import VRPCAConfig, top_hessian_eigenpair_vrpca
+
+            print(f"\nRunning VR-PCA solver...")
+            vrpca_result = top_hessian_eigenpair_vrpca(
+                net=model,
+                inputs=X,
+                targets=y,
+                criterion=criterion,
+                config=VRPCAConfig(batch_size=X.shape[0], epochs=8),
+            )
+            print(
+                "VR-PCA dominant eigenvalue: {:.6f} | converged={} | hvp_equiv={:.2f}".format(
+                    vrpca_result.eigenvalue,
+                    vrpca_result.converged,
+                    vrpca_result.hvp_equivalent_calls,
+                )
+            )
+        except ImportError:
+            print("VR-PCA solver not available; install the package in editable mode to enable it.")
+
         return {
             'max_eigenvalue': max_eig,
             'min_eigenvalue': min_eig,
