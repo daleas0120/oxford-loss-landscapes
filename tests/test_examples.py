@@ -11,9 +11,22 @@ example_scripts = glob.glob(os.path.join(EXAMPLES_DIR, "*.py"))
 
 @pytest.mark.parametrize("script_path", example_scripts)
 def test_example_script_runs(script_path):
-	"""Smoke test: run each example script and check for errors."""
-	print(f"Running example: {script_path}")
-	result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
-	assert result.returncode == 0, f"Script {script_path} failed with error:\n{result.stderr}"
-
+    """Smoke test: run each example script and check for errors."""
+    print(f"Running example: {script_path}")
+    result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
+    
+    # Check if failure is due to missing optional dependencies
+    if result.returncode != 0:
+        stderr = result.stderr.lower()
+        # Skip tests that fail due to missing optional dependencies
+        if any(missing_dep in stderr for missing_dep in [
+            'no module named \'torchvision\'',
+            'no module named \'transformers\'',
+            'no module named \'datasets\'',
+            'no module named \'streamlit\'',
+            'no module named \'plotly\''
+        ]):
+            pytest.skip(f"Skipping {script_path} due to missing optional dependency")
+    
+    assert result.returncode == 0, f"Script {script_path} failed with error:\n{result.stderr}"
 

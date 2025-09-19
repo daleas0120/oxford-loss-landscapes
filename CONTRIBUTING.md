@@ -94,7 +94,7 @@ src/oxford_loss_landscapes/
 - The package uses `setuptools_scm` for automatic versioning based on git tags
 - Version information is automatically written to `src/oxford_loss_landscapes/_version.py`
 - Dependencies are managed in `pyproject.toml`
-- The package supports Python 3.8+
+- The package supports Python 3.10+
 
 ## Known Issues
 

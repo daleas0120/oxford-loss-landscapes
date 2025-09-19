@@ -266,10 +266,10 @@ def test_covariance():
     assert cov_matrix.shape == (10, 10)
     assert torch.allclose(cov_matrix, torch.zeros(10, 10), atol=1e-6)
 
-def test_create_hessian_vector_product():
+def test_create_hessian_vector_product_from_loss():
     """Test the new create_hessian_vector_product function."""
     try:
-        from oxford_loss_landscapes.hessian import create_hessian_vector_product
+        from oxford_loss_landscapes.hessian.hessian import create_hessian_vector_product_from_loss
     except ImportError:
         pytest.skip("Hessian package not available; skipping related tests.")
     
@@ -284,10 +284,12 @@ def test_create_hessian_vector_product():
     torch.manual_seed(42)
     X = torch.randn(20, 3)
     y = X.sum(dim=1, keepdim=True) + 0.1 * torch.randn(20, 1)
+
+    loss = criterion(model(X), y)
     
     # Create HVP function
-    hvp_func, params, N = create_hessian_vector_product(
-        model, X, y, criterion, use_cuda=False, all_params=True
+    hvp_func, params, N = create_hessian_vector_product_from_loss(
+        model, loss, use_cuda=False, all_params=True
     )
     
     # Test the function
@@ -432,7 +434,7 @@ def test_get_hessian():
     loss = criterion(output, y)
     
     # Compute Hessian
-    hessian = get_hessian(model,loss)
+    hessian = get_hessian(model,loss, method='numpy')
     
     # Check basic properties
     assert isinstance(hessian, np.ndarray)
