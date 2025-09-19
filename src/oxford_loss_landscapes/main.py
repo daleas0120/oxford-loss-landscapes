@@ -129,12 +129,8 @@ def linear_interpolation(model_start: typing.Union[torch.nn.Module, ModelWrapper
     end_model_wrapper = wrap_model(copy.deepcopy(model_end) if deepcopy_model else model_end)
 
     start_point = model_start_wrapper.get_module_parameters()
-    # end_point = distance*end_model_wrapper.get_module_parameters()
-    direction = distance*end_model_wrapper.get_module_parameters()
-
-    direction.mul_(steps / 2)
-    start_point.sub_(direction)
-    direction.truediv_(steps / 2)
+    end_point = end_model_wrapper.get_module_parameters()
+    direction = (end_point - start_point) / steps
 
     data_values = []
     for _ in trange(steps, desc='Calculating...'):

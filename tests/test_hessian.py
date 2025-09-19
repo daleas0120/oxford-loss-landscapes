@@ -435,7 +435,6 @@ def test_get_hessian():
     
     # Compute Hessian
     hessian = get_hessian(model,loss, method='numpy')
-
     
     # Check basic properties
     assert isinstance(hessian, np.ndarray)

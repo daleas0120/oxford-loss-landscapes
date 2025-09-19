@@ -10,9 +10,18 @@ Key Functions:
 - hessian_trace(): Estimates the trace (sum of all eigenvalues)
 """
 
+import sys
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import numpy as np
+
+# Allow running without installing the package by injecting src/ into sys.path
+_ROOT = Path(__file__).resolve().parents[1]
+_SRC = _ROOT / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 
 def create_model(input_dim=5, hidden_dim=10):
     """Create a simple feedforward network."""
@@ -157,7 +166,28 @@ def analyze_hessian_eigenvalues(model, X, y, criterion):
         except (RuntimeError, ValueError, TypeError) as e:
             print(f"✗ Error computing trace: {e}")
             trace_estimate = None
-        
+
+        try:
+            from oxford_loss_landscapes.hessian.vrpca import VRPCAConfig, top_hessian_eigenpair_vrpca
+
+            print(f"\nRunning VR-PCA solver...")
+            vrpca_result = top_hessian_eigenpair_vrpca(
+                net=model,
+                inputs=X,
+                targets=y,
+                criterion=criterion,
+                config=VRPCAConfig(batch_size=X.shape[0], epochs=8),
+            )
+            print(
+                "VR-PCA dominant eigenvalue: {:.6f} | converged={} | hvp_equiv={:.2f}".format(
+                    vrpca_result.eigenvalue,
+                    vrpca_result.converged,
+                    vrpca_result.hvp_equivalent_calls,
+                )
+            )
+        except ImportError:
+            print("VR-PCA solver not available; install the package in editable mode to enable it.")
+
         return {
             'max_eigenvalue': max_eig,
             'min_eigenvalue': min_eig,
