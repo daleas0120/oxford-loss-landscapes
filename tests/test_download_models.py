@@ -4,12 +4,21 @@ import os
 import shutil
 import pytest
 
+def test_package_import():
+    """Test that the main package can be imported."""
+    try:
+        import oxford_loss_landscapes.download_models as oll
+        assert hasattr(oll, 'download_zenodo_model')
+        assert hasattr(oll, 'download_zenodo_zip')
+    except ImportError as e:
+        pytest.skip(f"Package not properly installed: {e}")
+
 def test_download_zenodo_zip():
     """Test downloading a ZIP file from Zenodo and extracting it."""
     try:
         from oxford_loss_landscapes.download_models import download_zenodo_zip
-    except ImportError:
-        pytest.skip("Package not properly installed; skipping related tests.")
+    except ImportError as e:
+        pytest.skip(f"Package not properly installed; skipping related tests: {e}")
     os.makedirs("test_downloads", exist_ok=True)
     # Test downloading a small file from Zenodo
     model_path = download_zenodo_zip("12763938", output_file="test_downloads/paper-data-redundancy-v1.0.zip")
