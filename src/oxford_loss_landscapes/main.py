@@ -131,7 +131,7 @@ def _evaluate_plane_parallel(start_point, dir_one, dir_two, steps, metric, model
         if row_idx % 2 != 0:
             # Create a new tensor representing the total horizontal shift
             # by multiplying the direction vector by the number of steps.
-            total_shift = dir_two_ * steps_
+            total_shift = dir_two_.mul(steps_)
             # Add this single, scaled vector to the starting point.
             current_point.add_(total_shift)
 
