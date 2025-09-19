@@ -17,3 +17,4 @@ def test_example_script_runs(script_path):
 	assert result.returncode == 0, f"Script {script_path} failed with error:\n{result.stderr}"
 
 
+

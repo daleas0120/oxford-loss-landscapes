@@ -6,6 +6,7 @@
 import torch
 from torchdiffeq import odeint
 from copy import deepcopy
+from oxford_loss_landscapes.hessian import npvec_to_tensorlist
 
 def weights_init(m):
     if isinstance(m, torch.nn.Linear):
@@ -52,33 +53,37 @@ def tensorlist_to_tensor(weights):
     
     return torch.cat([w.view(w.numel()) if w.dim() > 1 else torch.FloatTensor(w) for w in weights])
 
-def npvec_to_tensorlist(flattened_weights, params):
-    """ Convert a numpy vector to a list of tensors with the same shape as "params".
 
-        Args:
-            flattened_weights: a list of numpy vectors
-            base: a list of parameter tensors from net
 
-        Returns:
-            a list of tensors with the same shape as base
-    """
+
+
+# def npvec_to_tensorlist(flattened_weights, params):
+#     """ Convert a numpy vector to a list of tensors with the same shape as "params".
+
+#         Args:
+#             flattened_weights: a list of numpy vectors
+#             base: a list of parameter tensors from net
+
+#         Returns:
+#             a list of tensors with the same shape as base
+#     """
     
-    if isinstance(params, list):
-        w2 = deepcopy(params)
-        idx = 0
-        for w in w2:
-            w.copy_(flattened_weights[idx:idx + w.numel()].clone().detach().view(w.size()))
-            idx += w.numel()
-        assert(idx == len(flattened_weights)), 'Flattened weights length does not match total number of parameters.'
-        return w2
-    else:
-        s2 = []
-        idx = 0
-        for (k, w) in params.items():
-            s2.append(flattened_weights[idx:idx + w.numel()]).clone().detach().view(w.size())
-            idx += w.numel()
-        assert idx == len(flattened_weights)
-        return s2
+#     if isinstance(params, list):
+#         w2 = deepcopy(params)
+#         idx = 0
+#         for w in w2:
+#             w.copy_(flattened_weights[idx:idx + w.numel()].clone().detach().view(w.size()))
+#             idx += w.numel()
+#         assert(idx == len(flattened_weights)), 'Flattened weights length does not match total number of parameters.'
+#         return w2
+#     else:
+#         s2 = []
+#         idx = 0
+#         for (k, w) in params.items():
+#             s2.append(flattened_weights[idx:idx + w.numel()]).clone().detach().view(w.size())
+#             idx += w.numel()
+#         assert idx == len(flattened_weights)
+#         return s2
         
 def covariance(x, y, number_ensembles):
     """ Compute covriance associated with tensors x,y.
@@ -316,6 +321,8 @@ def copy_wts_into_model(new_wts_vector, model):
     """
     Copy a new weights vector into a model.
     """
+    og_params = [i[1] for i in model.named_parameters() if len(i[1].size()) >= 1]
+    new_model_wts = npvec_to_tensorlist(new_wts_vector, og_params)
 
     layer_names = model.state_dict().keys()
     print(layer_names)
@@ -323,7 +330,7 @@ def copy_wts_into_model(new_wts_vector, model):
     new_model_wt_dict = deepcopy(model.state_dict())
     empty_model = deepcopy(model)
 
-    for layer, new_param in zip(layer_names, new_wts_vector):
+    for layer, new_param in zip(layer_names, new_model_wts):
         if new_param.shape == new_model_wt_dict[layer].shape:
             new_model_wt_dict[layer] = new_param
         else:
