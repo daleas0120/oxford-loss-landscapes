@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: macos-14 # Or macos-14-arm64 for a specific version
+    runs-on: macos-14-arm64 # Or macos-14 for OS 14 on intel and silicon macs
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
