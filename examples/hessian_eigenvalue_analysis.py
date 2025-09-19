@@ -10,9 +10,18 @@ Key Functions:
 - hessian_trace(): Estimates the trace (sum of all eigenvalues)
 """
 
+import sys
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import numpy as np
+
+# Allow running without installing the package by injecting src/ into sys.path
+_ROOT = Path(__file__).resolve().parents[1]
+_SRC = _ROOT / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
 
 def create_model(input_dim=5, hidden_dim=10):
     """Create a simple feedforward network."""
