@@ -19,6 +19,7 @@ class VRPCAConfig:
     use_minibatch_equivalent: bool = True
     budget: Optional[float] = None
     track_window: int = 5
+    inner_loop_factor: float = 1.0
 
     def __post_init__(self) -> None:
         if self.batch_size <= 0:
@@ -33,6 +34,8 @@ class VRPCAConfig:
             raise ValueError("eta_fixed must be positive")
         if self.track_window <= 0:
             raise ValueError("track_window must be positive")
+        if self.inner_loop_factor <= 0:
+            raise ValueError("inner_loop_factor must be positive")
 
 
 @dataclass
