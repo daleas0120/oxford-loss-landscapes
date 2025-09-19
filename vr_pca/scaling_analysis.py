@@ -11,7 +11,8 @@ from sklearn.metrics import r2_score
 import argparse
 from typing import Tuple, Dict, Any
 import warnings
-warnings.filterwarnings('ignore')
+# Suppress only specific warnings known to be harmless (e.g., RuntimeWarning from numpy during curve fitting)
+warnings.filterwarnings('ignore', category=RuntimeWarning, module='numpy')
 
 
 def power_law_model(x, a, b):
