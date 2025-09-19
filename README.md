@@ -102,7 +102,7 @@ print(f"Loss landscape shape: {landscape.shape}")
 
 # Compute loss at current parameters
 loss_value = oll.point(model_wrapper, metric=oll.Loss(criterion, inputs, targets))
-print(f"Current loss: {loss_value}"))
+print(f"Current loss: {loss_value}")
 ```
 
 ## Features
