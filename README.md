@@ -66,6 +66,7 @@ This includes: plotly, ipywidgets, jupyter, scikit-learn, torchvision
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
+pip install .
 ```
 
 ### Python Version Compatibility
