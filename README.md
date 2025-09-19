@@ -97,12 +97,12 @@ targets = torch.randn(100, 1)
 model_wrapper = oll.SimpleModelWrapper(model)
 
 # Compute a random 2D loss landscape
-landscape = oll.random_plane(model_wrapper, distance=1.0, steps=25)
+landscape = oll.random_plane(model_wrapper, metric=oll.Loss(criterion, inputs, targets), distance=1.0, steps=25)
 print(f"Loss landscape shape: {landscape.shape}")
 
 # Compute loss at current parameters
-loss_value = oll.point(model_wrapper)
-print(f"Current loss: {loss_value}")
+loss_value = oll.point(model_wrapper, metric=oll.Loss(criterion, inputs, targets))
+print(f"Current loss: {loss_value}"))
 ```
 
 ## Features
