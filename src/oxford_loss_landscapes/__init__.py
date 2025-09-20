@@ -61,10 +61,11 @@ try:
     import streamlit
     import plotly
     from .dashboard import *
-except ImportError:
+except ImportError as e:
     # Dashboard dependencies (streamlit, plotly) not available
     # Install with: pip install -e ".[advanced]"
-    pass
+    print(f"Optional dashboard dependencies not available: {e}")
+    print("For dashboard functionality, please install: pip install -e '.[advanced]'")
 
 # Utilities
 from .download_models import download_zenodo_model, download_zenodo_zip, extract_zip
