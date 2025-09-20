@@ -24,6 +24,7 @@ try:
     from oxford_loss_landscapes.hessian.hessian import get_hessian_eigenstuff
     from oxford_loss_landscapes.metrics import Loss
     from oxford_loss_landscapes.hessian.utilities import copy_wts_into_model
+    oll.hessian.hessian.MEDIUM_MATRIX_SIZE = int(1e10)
     print(f"✓ Successfully imported oxford_loss_landscapes version {oll.__version__}")
 except ImportError as e:
     print(f"✗ Failed to import package: {e}")

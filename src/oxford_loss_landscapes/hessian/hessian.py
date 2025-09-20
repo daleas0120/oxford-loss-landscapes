@@ -64,7 +64,7 @@ def get_hessian(model, loss, method='numpy'):
         # For small models, use direct Hessian computation
         hessian = small_hessian(model, loss, method=method)
         return hessian
-    elif n_params < MEDIUM_MATRIX_SIZE:
+    elif n_params < LARGE_MATRIX_SIZE:
         # For medium models, use Hessian-vector product
         if isinstance(loss, (int, float)):
             loss = torch.tensor(loss, requires_grad=True)
